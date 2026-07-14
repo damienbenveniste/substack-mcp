@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v8.3.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      # ScaffoldGuard 0.1.2 expects the generated TypeScript CI token `npm install`;
+      # this repository executes `npm ci` because package-lock.json is committed.
+      - run: npm ci
+
+      - run: npm run format:check
+      - run: npm run lint
+
+      - run: npm run typecheck
+
+      - run: npm test
+      - run: npm run build
+      - run: npm run validate:v1-local
+
+      - run: npm run coverage
+
+      - run: uv tool install scaffold-guard
+      - run: scaffold-guard check

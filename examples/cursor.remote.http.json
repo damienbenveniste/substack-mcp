@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "substack-drafts": {
+      "type": "streamable-http",
+      "url": "https://your-cloud-run-url/mcp",
+      "headers": {
+        "Authorization": "Bearer ${env:MCP_BEARER_TOKEN}"
+      }
+    }
+  }
+}

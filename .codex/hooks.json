@@ -1,0 +1,59 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "apply_patch|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/sh -c 'start=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"; root=\"$start\"; while [ \"$root\" != \"/\" ] && [ ! -f \"$root/scaffold-guard.toml\" ]; do root=\"$(dirname \"$root\")\"; done; if [ ! -f \"$root/scaffold-guard.toml\" ]; then root=\"$start\"; fi; scaffold-guard check --path \"$root\"'",
+            "timeout": 120,
+            "statusMessage": "scaffold-guard generated: checking project policy after file edits"
+          },
+          {
+            "type": "command",
+            "command": "/bin/sh -c 'start=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"; root=\"$start\"; while [ \"$root\" != \"/\" ] && [ ! -f \"$root/scaffold-guard.toml\" ]; do root=\"$(dirname \"$root\")\"; done; if [ ! -f \"$root/scaffold-guard.toml\" ]; then root=\"$start\"; fi; if [ -f \"$root/.codex/hooks/workflow-evidence.sh\" ]; then /bin/sh \"$root/.codex/hooks/workflow-evidence.sh\" post-tool-use \"$root\" edit; else echo \"scaffold-guard generated: workflow evidence hook missing: $root/.codex/hooks/workflow-evidence.sh\" >&2; fi'",
+            "timeout": 15,
+            "statusMessage": "scaffold-guard generated: recording edit workflow evidence"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/sh -c 'start=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"; root=\"$start\"; while [ \"$root\" != \"/\" ] && [ ! -f \"$root/scaffold-guard.toml\" ]; do root=\"$(dirname \"$root\")\"; done; if [ ! -f \"$root/scaffold-guard.toml\" ]; then root=\"$start\"; fi; if [ -f \"$root/.codex/hooks/workflow-evidence.sh\" ]; then /bin/sh \"$root/.codex/hooks/workflow-evidence.sh\" subagent-start \"$root\" subagent; else echo \"scaffold-guard generated: workflow evidence hook missing: $root/.codex/hooks/workflow-evidence.sh\" >&2; fi'",
+            "timeout": 15,
+            "statusMessage": "scaffold-guard generated: recording subagent start evidence"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/sh -c 'start=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"; root=\"$start\"; while [ \"$root\" != \"/\" ] && [ ! -f \"$root/scaffold-guard.toml\" ]; do root=\"$(dirname \"$root\")\"; done; if [ ! -f \"$root/scaffold-guard.toml\" ]; then root=\"$start\"; fi; if [ -f \"$root/.codex/hooks/workflow-evidence.sh\" ]; then /bin/sh \"$root/.codex/hooks/workflow-evidence.sh\" subagent-stop \"$root\" subagent; else echo \"scaffold-guard generated: workflow evidence hook missing: $root/.codex/hooks/workflow-evidence.sh\" >&2; fi'",
+            "timeout": 15,
+            "statusMessage": "scaffold-guard generated: recording subagent stop evidence"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/sh -c 'start=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"; root=\"$start\"; while [ \"$root\" != \"/\" ] && [ ! -f \"$root/scaffold-guard.toml\" ]; do root=\"$(dirname \"$root\")\"; done; if [ ! -f \"$root/scaffold-guard.toml\" ]; then root=\"$start\"; fi; if [ -f \"$root/.codex/hooks/workflow-evidence.sh\" ]; then /bin/sh \"$root/.codex/hooks/workflow-evidence.sh\" stop \"$root\" turn; else echo \"scaffold-guard generated: workflow evidence hook missing: $root/.codex/hooks/workflow-evidence.sh\" >&2; fi'",
+            "timeout": 15,
+            "statusMessage": "scaffold-guard generated: recording stop evidence"
+          }
+        ]
+      }
+    ]
+  }
+}

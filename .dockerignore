@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+.data/
+.env
+.env.*
+!.env.example
+.codex/
+.scaffold-guard/
+.DS_Store

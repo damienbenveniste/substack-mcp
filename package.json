@@ -1,0 +1,85 @@
+{
+  "name": "substack-mcp",
+  "version": "0.1.0",
+  "description": "Private MCP server for validating and drafting Substack newsletter posts.",
+  "type": "module",
+  "private": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "auth:setup": "tsx scripts/substackAuthSetup.ts",
+    "dev:http": "tsx src/http.ts",
+    "dev:stdio": "tsx src/stdio.ts",
+    "cloud-run:logs:verify": "tsx scripts/cloudRunLogsVerify.ts",
+    "cloud-run:plan": "tsx scripts/cloudRunPlan.ts",
+    "cloud-run:verify": "tsx scripts/cloudRunVerify.ts",
+    "create:fixture": "tsx scripts/createFixtureDraft.ts",
+    "fixtures:status": "tsx scripts/fixtureStatus.ts",
+    "inspect:draft": "tsx scripts/inspectDraft.ts",
+    "mcp:preflight": "tsx scripts/v1AcceptancePreflight.ts --local",
+    "smoke:inspector": "tsx scripts/smokeLocalHttp.ts --inspector-cli",
+    "smoke:docker-http": "tsx scripts/smokeDockerHttp.ts",
+    "smoke:http-local": "tsx scripts/smokeLocalHttp.ts",
+    "smoke:http-oauth": "tsx scripts/smokeLocalOAuthHttp.ts",
+    "smoke:http-static-bearer": "tsx scripts/smokeLocalStaticBearerHttp.ts",
+    "smoke:stdio": "tsx scripts/smokeLocalStdio.ts",
+    "test:mcp-local": "npm run build && npm run smoke:http-local && npm run smoke:stdio",
+    "smoke:remote": "tsx scripts/smokeRemoteHttp.ts",
+    "smoke:ngrok-noauth": "tsx scripts/smokeNgrokNoAuthHttp.ts",
+    "smoke:ngrok-oauth": "tsx scripts/smokeNgrokOAuthHttp.ts",
+    "smoke:ngrok-static-bearer": "tsx scripts/smokeNgrokStaticBearerHttp.ts",
+    "smoke:remote-noauth": "tsx scripts/smokeRemoteNoAuthHttp.ts",
+    "smoke:remote-oauth": "tsx scripts/smokeRemoteOAuthHttp.ts",
+    "v1:preflight": "tsx scripts/v1AcceptancePreflight.ts",
+    "v1:record": "tsx scripts/recordV1Evidence.ts",
+    "v1:runbook": "tsx scripts/v1AcceptanceRunbook.ts",
+    "v1:status": "tsx scripts/v1AcceptanceStatus.ts",
+    "validate:v1-local": "npm run create:fixture -- --kind all --dry-run && npm run fixtures:status && npm run v1:preflight -- --json --no-env-file && npm run v1:status -- --json && npm run v1:runbook && npm run build && npm run smoke:docker-http && npm run smoke:http-local && npm run smoke:inspector && npm run smoke:http-static-bearer && npm run smoke:http-oauth && npm run smoke:stdio",
+    "start": "node dist/http.js",
+    "start:http": "node dist/http.js",
+    "start:stdio": "node dist/stdio.js",
+    "format": "biome format --write .",
+    "format:check": "biome ci .",
+    "lint": "biome lint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:live": "vitest run tests/live",
+    "coverage": "vitest run --coverage",
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.2.0",
+    "@types/mdast": "^4.0.4",
+    "@types/node": "^20.19.43",
+    "@vitest/coverage-v8": "^4.0.0",
+    "nock": "^13.5.6",
+    "tsx": "^4.23.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "dotenv": "^16.6.1",
+    "jose": "^6.2.3",
+    "pino": "^9.14.0",
+    "playwright-core": "^1.61.1",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
+    "remark-parse": "^11.0.0",
+    "unified": "^11.0.5",
+    "zod": "^3.25.76"
+  }
+}

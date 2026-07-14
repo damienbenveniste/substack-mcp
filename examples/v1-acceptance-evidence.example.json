@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "gates": [
+    {
+      "id": 7,
+      "verified_at": "2026-07-08T12:00:00Z",
+      "evidence": "Live rich draft flow passed, all four Substack fixtures were ready, fixture compatibility tests passed, and manual formatting review confirmed image, code, and LaTeX rendering.",
+      "command": "npm run fixtures:status -- --require-all; npm test -- tests/content/substackFixtureCompatibility.test.ts; V1_LIVE_SUBSTACK_EVIDENCE_ARTIFACTS=.data/v1/gate-07-rich-draft-live-fixtures.md,.data/v1/gate-08-update-draft-live.md,.data/v1/gate-09-read-drafts-live.md RUN_LIVE_SUBSTACK_TESTS=1 npm run test:live",
+      "artifact": ".data/v1/gate-07-rich-draft-live-fixtures.md"
+    },
+    {
+      "id": 8,
+      "verified_at": "2026-07-08T12:10:00Z",
+      "evidence": "Live update_draft flow updated an existing unpublished draft, manual review confirmed it remained unpublished, and the gate 8 artifact records draft reference, title transition, update command, field update result, post-update readback, body handling, and cleanup decision.",
+      "command": "V1_LIVE_SUBSTACK_EVIDENCE_ARTIFACTS=.data/v1/gate-07-rich-draft-live-fixtures.md,.data/v1/gate-08-update-draft-live.md,.data/v1/gate-09-read-drafts-live.md RUN_LIVE_SUBSTACK_TESTS=1 npm run test:live",
+      "artifact": ".data/v1/gate-08-update-draft-live.md"
+    },
+    {
+      "id": 9,
+      "verified_at": "2026-07-08T12:20:00Z",
+      "evidence": "Live list_drafts and get_draft flow returned the expected unpublished draft metadata, and the gate 9 artifact records draft reference, list result, get result, metadata reviewed, body-inclusion decision, post-update readback, raw-content handling, and follow-up action without raw draft body contents.",
+      "command": "V1_LIVE_SUBSTACK_EVIDENCE_ARTIFACTS=.data/v1/gate-07-rich-draft-live-fixtures.md,.data/v1/gate-08-update-draft-live.md,.data/v1/gate-09-read-drafts-live.md RUN_LIVE_SUBSTACK_TESTS=1 npm run test:live",
+      "artifact": ".data/v1/gate-09-read-drafts-live.md"
+    },
+    {
+      "id": 11,
+      "verified_at": "2026-07-08T12:30:00Z",
+      "evidence": "ChatGPT developer-mode connector listed tools and created a manual acceptance draft through ngrok, and the gate 11 artifact records connector URL, ChatGPT surface, tool list, manual flow result, draft reference, tunnel exposure window, traffic review, and rotation decision.",
+      "command": "npm run smoke:ngrok-noauth -- --evidence-artifact .data/v1/gate-11-chatgpt-ngrok.md; ChatGPT connector manual workflow",
+      "artifact": ".data/v1/gate-11-chatgpt-ngrok.md"
+    },
+    {
+      "id": 12,
+      "verified_at": "2026-07-08T12:45:00Z",
+      "evidence": "Cloud Run service deployed, exported service configuration verified, deployed health endpoint responded, remote smoke passed, and the gate 12 artifact records project/region/service, service URL check, deploy command source, health check, remote smoke, auth mode, budget guard, and path-secret review.",
+      "command": "SERVICE_URL=$(gcloud run services describe substack-draft-mcp --region us-central1 --format='value(status.url)'); npm run cloud-run:verify -- --service-json .data/cloud-run-service.json --auth-mode noauth --publication-url https://example.substack.com --user-id 123456 --max-body-bytes 750000 --max-image-bytes 8000000 --substack-request-timeout-ms 30000 --confirmation-token-ttl-seconds 900 --evidence-artifact .data/v1/gate-12-cloud-run-deployment.md; curl --fail --show-error \"$SERVICE_URL/healthz\"; npm run smoke:remote-noauth -- --url \"$SERVICE_URL/mcp\"",
+      "artifact": ".data/v1/gate-12-cloud-run-deployment.md"
+    },
+    {
+      "id": 13,
+      "verified_at": "2026-07-08T12:50:00Z",
+      "evidence": "Cloud Run service uses Secret Manager references for required runtime secrets, and the gate 13 artifact records required references, secret names, runtime service account, access bindings, version policy, literal-env review, secret-value handling, and rotation follow-up.",
+      "command": "npm run cloud-run:verify -- --service-json .data/cloud-run-service.json --auth-mode noauth --publication-url https://example.substack.com --user-id 123456 --max-body-bytes 750000 --max-image-bytes 8000000 --substack-request-timeout-ms 30000 --confirmation-token-ttl-seconds 900 --evidence-artifact .data/v1/gate-13-cloud-run-secrets.md",
+      "artifact": ".data/v1/gate-13-cloud-run-secrets.md"
+    },
+    {
+      "id": 14,
+      "verified_at": "2026-07-08T12:55:00Z",
+      "evidence": "Remote static-bearer smoke passed, and the gate 14 artifact records the header-capable client version, endpoint reference, header configuration method, tool list, validate_newsletter_content result, bearer-rejection proof, and token-redaction review.",
+      "command": "npm run smoke:ngrok-static-bearer -- --evidence-artifact .data/v1/gate-14-static-bearer-remote.md; header-capable client manual workflow",
+      "artifact": ".data/v1/gate-14-static-bearer-remote.md"
+    },
+    {
+      "id": 15,
+      "verified_at": "2026-07-08T12:58:00Z",
+      "evidence": "Built stdio entrypoint passed smoke testing, and the gate 15 artifact records the Claude Code or Cursor client version, local config path or add command, tool list, validate_newsletter_content result, and local-credentials review.",
+      "command": "npm run smoke:stdio -- --evidence-artifact .data/v1/gate-15-stdio-client.md; Claude Code or Cursor stdio manual workflow",
+      "artifact": ".data/v1/gate-15-stdio-client.md"
+    },
+    {
+      "id": 16,
+      "verified_at": "2026-07-08T13:00:00Z",
+      "evidence": "Exported Cloud Run logs passed cloud-run:logs:verify with required audit events after live acceptance traffic, and the gate 16 artifact records export window, service/revision, live traffic, verifier command, no cookie/bearer-token/secret-environment/private MCP path leaks, no draft content fields, metadata-only audit events, raw-log handling without raw log entries or secret values, and follow-up action.",
+      "command": "npm run cloud-run:logs:verify -- --logs-json .data/cloud-run-logs.json --require-audit-events --evidence-artifact .data/v1/gate-16-cloud-run-logs.md",
+      "artifact": ".data/v1/gate-16-cloud-run-logs.md"
+    }
+  ]
+}

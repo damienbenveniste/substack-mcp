@@ -1,0 +1,68 @@
+[project]
+name = "substack-mcp"
+package = "substack_mcp"
+profile = "typescript"
+python_min = "3.13"
+coverage_fail_under = 95
+ci = "github"
+
+[agents]
+codex = true
+claude = false
+cursor = false
+
+[features]
+docs = false
+github_actions = true
+gitlab_ci = false
+mkdocs = false
+python = false
+typescript = true
+
+[tools]
+ruff = false
+mypy = false
+pyright = false
+typescript = true
+typescript_strict = true
+biome = true
+vitest = true
+
+[policy]
+forbid_type_ignore = true
+forbid_pyright_ignore = false
+forbid_noqa = true
+forbid_any = true
+forbid_dict_str_any = false
+forbid_shell_true = true
+require_tests_for_src_changes = true
+require_docs_for_public_api_changes = true
+require_lockfile_for_dependency_changes = true
+
+[validation]
+quick = [
+
+  "npm run format:check",
+  "npm run lint",
+
+  "npm run typecheck",
+
+  "npm test",
+
+  "scaffold-guard check"
+]
+full = [
+
+  "npm run format:check",
+  "npm run lint",
+
+  "npm run typecheck",
+
+  "npm test",
+
+  "npm run build",
+
+  "npm run coverage",
+
+  "scaffold-guard check"
+]
