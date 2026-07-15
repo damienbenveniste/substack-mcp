@@ -5,15 +5,29 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v8.3.0
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        with:
+          version: "0.11.28"
+          enable-cache: true
+          cache-dependency-glob: docs/requirements.lock
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
+          cache: npm
       # ScaffoldGuard 0.1.2 expects the generated TypeScript CI token `npm install`;
       # this repository executes `npm ci` because package-lock.json is committed.
       - run: npm ci
@@ -28,6 +42,11 @@ jobs:
       - run: npm run validate:v1-local
 
       - run: npm run coverage
+
+      - run: uv python install 3.13
+      - run: uv venv --python 3.13
+      - run: uv pip sync --python .venv/bin/python --require-hashes docs/requirements.lock
+      - run: .venv/bin/mkdocs build --strict
 
       - run: uv tool install scaffold-guard
       - run: scaffold-guard check

@@ -1,0 +1,102 @@
+name: Bug report
+description: Report a reproducible problem without sharing secrets or private draft data.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. **Do not include Substack credentials, cookies, tokens, private draft text, private images, raw API responses, or sensitive logs/screenshots.** Use synthetic redacted examples only. Report vulnerabilities through the private Security Advisory link in the issue chooser.
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I removed all credentials, tokens, cookies, private draft data, and other personal information.
+          required: true
+        - label: This is not a security vulnerability requiring private disclosure.
+          required: true
+        - label: The report concerns draft-only behavior and does not request publishing, scheduling, deletion, email delivery, or public Notes.
+          required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Describe the problem and its impact in a few sentences.
+      placeholder: A synthetic draft validation request fails when...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      description: Provide a minimal reproduction using synthetic data and mocked network behavior.
+      placeholder: |
+        1. Install with npm ci
+        2. Run ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Redact identifiers and summarize errors without including draft bodies or raw responses.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: v0.1.0 or commit SHA
+    validations:
+      required: true
+
+  - type: dropdown
+    id: transport
+    attributes:
+      label: MCP transport
+      options:
+        - stdio
+        - Local Streamable HTTP
+        - Not transport-specific
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Include OS, Node.js version, and MCP client if relevant. Do not include hostnames or account identifiers.
+      placeholder: macOS 15, Node.js 22, MCP Inspector
+    validations:
+      required: true
+
+  - type: textarea
+    id: test_evidence
+    attributes:
+      label: Deterministic test evidence
+      description: List focused mocked tests or a minimal synthetic fixture that demonstrates the problem. Do not run a live Substack test for this report.
+      placeholder: npm test -- tests/path/to/test.ts
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional redacted context
+      description: Add only non-sensitive details needed to understand the issue.

@@ -1,0 +1,78 @@
+name: Feature request
+description: Propose a draft-only improvement that can be tested without private data or live network access.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This project is **draft-only** and uses Substack's unofficial, unstable API. Do not include credentials, cookies, tokens, private drafts, private images, or raw API responses. Requests to publish, schedule, delete, email, or create public Notes are out of scope.
+
+  - type: checkboxes
+    id: boundaries
+    attributes:
+      label: Scope and privacy check
+      options:
+        - label: This proposal remains draft-only and does not publish, schedule, delete, email, or create public Notes.
+          required: true
+        - label: I have not included credentials, tokens, cookies, private draft data, raw responses, or personal information.
+          required: true
+        - label: The proposal can be developed and tested with mocks or synthetic fixtures rather than live Substack network tests.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What draft workflow problem should be solved, and who experiences it?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the smallest user-visible behavior that would solve the problem.
+    validations:
+      required: true
+
+  - type: textarea
+    id: mcp_surface
+    attributes:
+      label: MCP surface impact
+      description: Identify affected tools, schemas, transports, or configuration. Write "None" if unchanged.
+    validations:
+      required: true
+
+  - type: textarea
+    id: api_risk
+    attributes:
+      label: Unofficial Substack API risk
+      description: Explain any assumed endpoint/editor shape and how failures or API drift should be contained. Write "None" if no Substack boundary changes.
+    validations:
+      required: true
+
+  - type: textarea
+    id: testing
+    attributes:
+      label: Deterministic testing approach
+      description: Describe mocked tests and synthetic fixtures. Live requests and real private data are not acceptable test requirements.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What existing workflow or smaller solution did you consider?
+    validations:
+      required: true
+
+  - type: textarea
+    id: docs
+    attributes:
+      label: Documentation impact
+      description: Identify public docs or examples that would need an update. Describe only deployment behavior that is implemented and verified.
+    validations:
+      required: true

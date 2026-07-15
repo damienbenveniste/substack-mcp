@@ -1,0 +1,11 @@
+# The maintainer reviews every repository change.
+* @damienbenveniste
+
+# Security, authentication, automation, and ownership rules require explicit review.
+/SECURITY.md @damienbenveniste
+/.github/CODEOWNERS @damienbenveniste
+/.github/dependabot.yml @damienbenveniste
+/.github/workflows/ @damienbenveniste
+/src/auth/ @damienbenveniste
+/src/safety/ @damienbenveniste
+/src/substack/ @damienbenveniste
