@@ -127,6 +127,7 @@ describe("loadConfig", () => {
       previewTokenSecret: "development-only-preview-token-secret-change-me",
       maxBodyBytes: 750_000,
       maxImageBytes: 8_000_000,
+      imageFileRoots: [],
       substackRequestTimeoutMs: DEFAULT_SUBSTACK_REQUEST_TIMEOUT_MS,
       confirmationTokenTtlSeconds: 900,
       authMode: "noauth",
@@ -156,6 +157,8 @@ describe("loadConfig", () => {
         PREVIEW_TOKEN_SECRET: " preview-secret ",
         MAX_BODY_BYTES: "100",
         MAX_IMAGE_BYTES: "200",
+        IMAGE_FILE_ROOTS:
+          " /tmp/generated-images, /tmp/uploads, /tmp/generated-images ",
         SUBSTACK_REQUEST_TIMEOUT_MS: "4000",
         CONFIRMATION_TOKEN_TTL_SECONDS: "300",
         AUTH_MODE: "static_bearer",
@@ -183,6 +186,7 @@ describe("loadConfig", () => {
       previewTokenSecret: "preview-secret",
       maxBodyBytes: 100,
       maxImageBytes: 200,
+      imageFileRoots: ["/tmp/generated-images", "/tmp/uploads"],
       substackRequestTimeoutMs: 4000,
       confirmationTokenTtlSeconds: 300,
       authMode: "static_bearer",
@@ -194,6 +198,15 @@ describe("loadConfig", () => {
       oauthJwtAlgorithms: ["RS256", "ES256", "EdDSA"],
     });
     expect(getMcpPath(config)).toBe("/mcp/secret-path");
+  });
+
+  it("requires IMAGE_FILE_ROOTS entries to be absolute paths", () => {
+    expect(() =>
+      loadConfig(
+        { IMAGE_FILE_ROOTS: "./generated-images" },
+        { loadEnvFile: false },
+      ),
+    ).toThrow("IMAGE_FILE_ROOTS entries must be absolute paths.");
   });
 
   it("requires MCP_PATH_SECRET to be a single URL-safe path segment", () => {

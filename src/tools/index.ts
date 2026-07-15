@@ -21,14 +21,26 @@ export {
   summarizeDraftList,
 } from "./listDrafts.js";
 export {
+  applyNativeDraftImagePatch,
+  inspectNativeDraftBody,
+  type NativeDraftImage,
+  type NativeDraftImagePatch,
+  type NativeDraftImagePatchResult,
+  NativeDraftImagePatchSchema,
+  type NativeDraftImagePatchSummary,
+} from "./nativeDraftImagePatch.js";
+export {
+  type PreviewDraftImagePatchInput,
   type PreviewDraftInput,
   PreviewDraftInputSchema,
   type PreviewDraftOutput,
   previewDraft,
+  previewDraftImagePatch,
   summarizePreview,
 } from "./previewDraft.js";
 export {
   summarizeUpdateDraft,
+  type UpdateDraftImagePatchInput,
   type UpdateDraftInput,
   UpdateDraftInputSchema,
   type UpdateDraftOutput,
@@ -36,6 +48,7 @@ export {
 } from "./updateDraft.js";
 export {
   summarizeUploadImage,
+  type UploadImageError,
   type UploadImageInput,
   UploadImageInputSchema,
   type UploadImageOutput,

@@ -176,21 +176,15 @@ describe("buildFixtureStatus", () => {
       expect(status).toMatchObject({
         present_count: REQUIRED_SUBSTACK_FIXTURES.length,
         valid_count: REQUIRED_SUBSTACK_FIXTURES.length,
-        compatible_count: REQUIRED_SUBSTACK_FIXTURES.length - 1,
+        compatible_count: REQUIRED_SUBSTACK_FIXTURES.length,
         all_present: true,
         all_valid: true,
-        all_compatible: false,
-        ready: false,
+        all_compatible: true,
+        ready: true,
       });
-      expect(status.incompatible).toEqual(["latex-block"]);
+      expect(status.incompatible).toEqual([]);
       expect(renderFixtureStatus(status, "text")).toContain(
-        "latex-block: incompatible",
-      );
-      expect(renderFixtureStatus(status, "text")).toContain(
-        "npm run create:fixture -- --kind all --capture",
-      );
-      expect(renderFixtureStatus(status, "text")).toContain(
-        "Compare latex-block-draft-body.json with the current adapter output",
+        "Adapter compatible: 4/4",
       );
       expect(status.fixtures[0]?.summary?.mark_types).toMatchObject({
         code: 1,
@@ -203,20 +197,9 @@ describe("buildFixtureStatus", () => {
         "image2",
       ]);
       expect(status.fixtures[3]?.summary?.latex_candidate_node_types).toEqual([
-        "math",
+        "latex_block",
       ]);
-      expect(status.fixtures[3]?.compatibility_error).toContain(
-        "adapter output does not match",
-      );
-      expect(status.fixtures[3]?.compatibility_error).toContain(
-        "First difference: doc.content[0].type",
-      );
-      expect(status.fixtures[3]?.compatibility_error).toContain(
-        "Adapter summary: top_level_nodes=1; node_types={code_block:1, text:1}",
-      );
-      expect(status.fixtures[3]?.compatibility_error).toContain(
-        "Captured summary: top_level_nodes=1; node_types={math:1}",
-      );
+      expect(status.fixtures[3]?.compatibility_error).toBeUndefined();
     });
   });
 
@@ -257,7 +240,7 @@ describe("buildFixtureStatus", () => {
       const status = buildFixtureStatus({ fixtureDir });
 
       expect(status.invalid).toEqual([]);
-      expect(status.incompatible).toEqual(["inline-marks", "latex-block"]);
+      expect(status.incompatible).toEqual(["inline-marks"]);
       expect(status.fixtures[0]).toMatchObject({
         kind: "inline-marks",
         valid: true,
@@ -335,7 +318,7 @@ describe("buildFixtureStatus", () => {
     });
   });
 
-  it("treats fallback image caption paragraphs as adapter-compatible", () => {
+  it("reports fallback image caption paragraphs as adapter-incompatible", () => {
     withTempFixtureDir((fixtureDir) => {
       writeAllFixtureDocs(fixtureDir);
       writeFileSync(
@@ -374,9 +357,9 @@ describe("buildFixtureStatus", () => {
       expect(status.fixtures[1]).toMatchObject({
         kind: "image",
         valid: true,
-        compatible: true,
+        compatible: false,
       });
-      expect(status.incompatible).toEqual(["latex-block"]);
+      expect(status.incompatible).toEqual(["image"]);
     });
   });
 
@@ -417,7 +400,7 @@ describe("buildFixtureStatus", () => {
     });
   });
 
-  it("reports native image captions as incompatible until the adapter supports the captured shape", () => {
+  it("treats native image captions as adapter-compatible", () => {
     withTempFixtureDir((fixtureDir) => {
       writeAllFixtureDocs(fixtureDir);
       writeFileSync(
@@ -438,7 +421,7 @@ describe("buildFixtureStatus", () => {
                   },
                 },
                 {
-                  type: "paragraph",
+                  type: "caption",
                   content: [{ type: "text", text: "Native caption" }],
                 },
               ],
@@ -452,11 +435,11 @@ describe("buildFixtureStatus", () => {
       expect(status.fixtures[1]).toMatchObject({
         kind: "image",
         valid: true,
-        compatible: false,
+        compatible: true,
       });
-      expect(status.incompatible).toEqual(["image", "latex-block"]);
+      expect(status.incompatible).toEqual([]);
       expect(renderFixtureStatus(status, "text")).toContain(
-        "image: incompatible",
+        "image: valid and compatible",
       );
     });
   });
@@ -601,7 +584,7 @@ describe("buildFixtureStatus", () => {
 
       expect(status.ready).toBe(false);
       expect(status.invalid).toEqual([]);
-      expect(status.incompatible).toEqual(["code-block", "latex-block"]);
+      expect(status.incompatible).toEqual(["code-block"]);
       expect(status.fixtures[2]).toMatchObject({
         kind: "code-block",
         valid: true,
@@ -611,7 +594,7 @@ describe("buildFixtureStatus", () => {
         "adapter output does not match",
       );
       expect(status.fixtures[2]?.compatibility_error).toContain(
-        "First difference: doc.content[0].attrs.lang",
+        "First difference: doc.content[0].type",
       );
     });
   });
@@ -630,19 +613,19 @@ describe("buildFixtureStatus", () => {
         expected: "doc.content[0].attrs: adapter is object, captured is null",
       },
       {
-        attrs: { lang: 123 },
+        attrs: { language: 123, nodeId: "captured-code-id" },
         expected:
-          "doc.content[0].attrs.lang: adapter string length 6, captured number",
+          "doc.content[0].attrs.language: adapter string length 6, captured number",
       },
       {
-        attrs: { lang: true },
+        attrs: { language: true, nodeId: "captured-code-id" },
         expected:
-          "doc.content[0].attrs.lang: adapter string length 6, captured boolean",
+          "doc.content[0].attrs.language: adapter string length 6, captured boolean",
       },
       {
-        attrs: { lang: null },
+        attrs: { language: null, nodeId: "captured-code-id" },
         expected:
-          "doc.content[0].attrs.lang: adapter string length 6, captured null",
+          "doc.content[0].attrs.language: adapter string length 6, captured null",
       },
     ];
 
@@ -655,7 +638,7 @@ describe("buildFixtureStatus", () => {
             type: "doc",
             content: [
               {
-                type: "code_block",
+                type: "highlighted_code_block",
                 attrs,
                 content: [{ type: "text", text: "print('hello')" }],
               },
@@ -779,8 +762,11 @@ function writeAllFixtureDocs(fixtureDir: string): void {
         type: "doc",
         content: [
           {
-            type: "code_block",
-            attrs: { lang: "python" },
+            type: "highlighted_code_block",
+            attrs: {
+              language: "python",
+              nodeId: "captured-code-id",
+            },
             content: [{ type: "text", text: "print('hello')" }],
           },
         ],
@@ -794,8 +780,11 @@ function writeAllFixtureDocs(fixtureDir: string): void {
         type: "doc",
         content: [
           {
-            type: "math",
-            attrs: { latex: "E = mc^2" },
+            type: "latex_block",
+            attrs: {
+              persistentExpression: "E = mc^2",
+              id: "captured-latex-id",
+            },
           },
         ],
       },

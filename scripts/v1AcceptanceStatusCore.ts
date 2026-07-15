@@ -84,7 +84,7 @@ const README_V1_REQUIRED_MARKERS = [
   "## MCP Inspector",
   "Claude Code setup examples",
   "Cursor examples",
-  "## ngrok and ChatGPT",
+  "## Remote MCP Clients with ngrok",
   "## Cloud Run",
   "## Secret Rotation",
   "Rotate `SUBSTACK_SESSION_TOKEN`",
@@ -392,13 +392,13 @@ export function buildV1AcceptanceStatus(
       ),
       gate(
         17,
-        "README includes local, Claude Code, Cursor, ChatGPT/ngrok, and Cloud Run instructions.",
+        "README includes local and remote setup for ChatGPT, Claude, Cursor, and Cloud Run.",
         readmeIncludesAll(readme, README_V1_REQUIRED_MARKERS)
           ? "local_evidence_available"
           : "missing_local_artifact",
         readmeIncludesAll(readme, README_V1_REQUIRED_MARKERS)
-          ? "README contains the required warning, safety boundary, formatting, limitations, setup, credential, client, ChatGPT/ngrok, Cloud Run, rotation, and troubleshooting sections."
-          : "README is missing one or more required warning, safety boundary, formatting, limitations, setup, credential, client, Cloud Run, rotation, or troubleshooting sections.",
+          ? "README contains the required warning, safety boundary, formatting, limitations, setup, credential, local and remote client, Cloud Run, rotation, and troubleshooting sections."
+          : "README is missing one or more required warning, safety boundary, formatting, limitations, setup, credential, local or remote client, Cloud Run, rotation, or troubleshooting sections.",
         "Review README setup instructions before release.",
       ),
     ],

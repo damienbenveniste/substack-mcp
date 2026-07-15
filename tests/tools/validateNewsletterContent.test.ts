@@ -30,7 +30,7 @@ describe("validateNewsletterContent", () => {
     expect(result.stats.links).toBe(1);
     expect(result.unsupported_features).toEqual(["table"]);
     expect(result.warnings).toContain(
-      "LaTeX block mapping is provisional until a live Substack LaTeX fixture is captured; preview uses a latex code block fallback.",
+      "Markdown tables are not supported in V1.",
     );
   });
 
@@ -121,7 +121,7 @@ describe("validateNewsletterContent", () => {
     );
   });
 
-  it("turns provisional LaTeX mapping into an error in strict mode", () => {
+  it("accepts native LaTeX mapping in strict mode", () => {
     const result = validateNewsletterContent(
       {
         body_format: "markdown_v1",
@@ -131,13 +131,10 @@ describe("validateNewsletterContent", () => {
       { maxBodyBytes: 750_000 },
     );
 
-    expect(result.ok).toBe(false);
-    expect(result.errors).toContain(
-      "LaTeX block mapping is provisional until a live Substack LaTeX fixture is captured; strict mode requires native LaTeX fixture compatibility.",
-    );
-    expect(result.warnings).toContain(
-      "LaTeX block mapping is provisional until a live Substack LaTeX fixture is captured; preview uses a latex code block fallback.",
-    );
+    expect(result.ok).toBe(true);
+    expect(result.errors).toEqual([]);
+    expect(result.warnings).toEqual([]);
+    expect(result.stats.latex_blocks).toBe(1);
   });
 
   it("validates explicit blocks_v1 input", () => {

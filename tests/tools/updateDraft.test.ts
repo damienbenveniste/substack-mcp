@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { SubstackRateLimitError } from "../../src/substack/errors.js";
 import { OMITTED_UNSAFE_DRAFT_URL_WARNING } from "../../src/tools/draftUrl.js";
-import { previewDraft } from "../../src/tools/previewDraft.js";
+import {
+  previewDraft,
+  previewDraftImagePatch,
+} from "../../src/tools/previewDraft.js";
 import {
   summarizeUpdateDraft,
   updateDraft,
@@ -24,6 +27,405 @@ const now = new Date("2026-07-08T12:00:00.000Z");
 const later = new Date("2026-07-08T12:05:00.000Z");
 
 describe("updateDraft", () => {
+  it("replaces one native image while preserving unknown draft JSON", async () => {
+    const nativeBody = JSON.stringify({
+      type: "doc",
+      attrs: { editorVersion: 42 },
+      content: [
+        {
+          type: "paragraph",
+          attrs: { unknownParagraphState: true },
+          content: [{ type: "text", text: "Keep this text" }],
+        },
+        { type: "latex_block", attrs: { persistentExpression: "x^2" } },
+        {
+          type: "captionedImage",
+          attrs: { alignment: "center" },
+          content: [
+            {
+              type: "image2",
+              attrs: {
+                src: "https://cdn.example.com/old.png",
+                alt: "Existing alt",
+                imageSize: "normal",
+                unknownImageState: { processing: "complete" },
+              },
+            },
+            {
+              type: "caption",
+              content: [{ type: "text", text: "Existing caption" }],
+            },
+          ],
+        },
+      ],
+    });
+    const imagePatch = {
+      match_image_url: "https://cdn.example.com/old.png",
+      replacement_image_url: "https://cdn.example.com/new.png",
+    };
+    const preview = await previewDraftImagePatch(
+      {
+        action: "update",
+        draft_id: 77,
+        image_patch: imagePatch,
+      },
+      config,
+      {
+        now,
+        client: {
+          getDraft: async (draftId) => ({
+            id: draftId,
+            draft_body: nativeBody,
+            status: "draft",
+            raw: {},
+          }),
+        },
+      },
+    );
+    if (!preview.confirmation_token) {
+      throw new Error("Expected native image patch confirmation token.");
+    }
+
+    let capturedPayload:
+      | { readonly draft_body?: string | undefined }
+      | undefined;
+    const result = await updateDraft(
+      {
+        draft_id: 77,
+        image_patch: imagePatch,
+        confirmation_token: preview.confirmation_token,
+      },
+      config,
+      {
+        now: later,
+        client: {
+          getDraft: async (draftId) => ({
+            id: draftId,
+            title: "Native draft",
+            draft_body: nativeBody,
+            status: "draft",
+            raw: {},
+          }),
+          updateDraft: async (draftId, payload) => {
+            capturedPayload = payload;
+            return { id: draftId, title: "Native draft", raw: {} };
+          },
+        },
+      },
+    );
+
+    expect(result).toMatchObject({
+      ok: true,
+      draft_id: 77,
+      image_patch: {
+        image_index: 1,
+        previous_image_url: "https://cdn.example.com/old.png",
+        replacement_image_url: "https://cdn.example.com/new.png",
+        preserved_non_target_content: true,
+      },
+    });
+    const updatedBody = JSON.parse(capturedPayload?.draft_body ?? "null");
+    expect(updatedBody.attrs).toEqual({ editorVersion: 42 });
+    expect(updatedBody.content[0]).toEqual({
+      type: "paragraph",
+      attrs: { unknownParagraphState: true },
+      content: [{ type: "text", text: "Keep this text" }],
+    });
+    expect(updatedBody.content[1]).toEqual({
+      type: "latex_block",
+      attrs: { persistentExpression: "x^2" },
+    });
+    expect(updatedBody.content[2]).toMatchObject({
+      attrs: { alignment: "center" },
+      content: [
+        {
+          type: "image2",
+          attrs: {
+            src: "https://cdn.example.com/new.png",
+            alt: "Existing alt",
+            imageSize: "normal",
+            unknownImageState: { processing: "complete" },
+          },
+        },
+        {
+          type: "caption",
+          content: [{ type: "text", text: "Existing caption" }],
+        },
+      ],
+    });
+  });
+
+  it("rejects stale native image previews and malformed tokens before writing", async () => {
+    const originalBody = JSON.stringify({
+      type: "doc",
+      content: [
+        {
+          type: "captionedImage",
+          content: [
+            {
+              type: "image2",
+              attrs: { src: "https://cdn.example.com/old.png" },
+            },
+          ],
+        },
+      ],
+    });
+    const imagePatch = {
+      image_index: 1,
+      replacement_image_url: "https://cdn.example.com/new.png",
+    };
+    const preview = await previewDraftImagePatch(
+      { action: "update", draft_id: 77, image_patch: imagePatch },
+      config,
+      {
+        now,
+        client: {
+          getDraft: async (draftId) => ({
+            id: draftId,
+            draft_body: originalBody,
+            status: "draft",
+            raw: {},
+          }),
+        },
+      },
+    );
+    if (!preview.confirmation_token) {
+      throw new Error("Expected native image patch confirmation token.");
+    }
+
+    let updateCalls = 0;
+    const stale = await updateDraft(
+      {
+        draft_id: 77,
+        image_patch: imagePatch,
+        confirmation_token: preview.confirmation_token,
+      },
+      config,
+      {
+        now: later,
+        client: {
+          getDraft: async (draftId) => ({
+            id: draftId,
+            draft_body: JSON.stringify({
+              ...JSON.parse(originalBody),
+              attrs: { concurrentEdit: true },
+            }),
+            status: "draft",
+            raw: {},
+          }),
+          updateDraft: async (draftId) => {
+            updateCalls += 1;
+            return { id: draftId, raw: {} };
+          },
+        },
+      },
+    );
+    expect(stale.ok).toBe(false);
+    expect(stale.errors).toContain(
+      "Confirmation token does not match the current draft input.",
+    );
+    expect(updateCalls).toBe(0);
+
+    let malformedFetches = 0;
+    const malformed = await updateDraft(
+      {
+        draft_id: 77,
+        image_patch: imagePatch,
+        confirmation_token: "not-a-token",
+      },
+      config,
+      {
+        client: {
+          getDraft: async (draftId) => {
+            malformedFetches += 1;
+            return { id: draftId, raw: {} };
+          },
+          updateDraft: async (draftId) => ({ id: draftId, raw: {} }),
+        },
+      },
+    );
+    expect(malformed.errors).toContain("Malformed confirmation token.");
+    expect(malformedFetches).toBe(0);
+  });
+
+  it("guards native image patch validation and unpublished status", async () => {
+    const originalBody = JSON.stringify({
+      type: "doc",
+      content: [
+        {
+          type: "image2",
+          attrs: { src: "https://cdn.example.com/old.png" },
+        },
+      ],
+    });
+    const imagePatch = {
+      image_index: 1,
+      replacement_image_url: "https://cdn.example.com/new.png",
+    };
+    const preview = await previewDraftImagePatch(
+      { action: "update", draft_id: 77, image_patch: imagePatch },
+      config,
+      {
+        now,
+        client: {
+          getDraft: async (draftId) => ({
+            id: draftId,
+            status: "draft",
+            draft_body: originalBody,
+            raw: {},
+          }),
+        },
+      },
+    );
+    if (!preview.confirmation_token) {
+      throw new Error("Expected native image patch confirmation token.");
+    }
+
+    const conflicting = await updateDraft(
+      {
+        draft_id: 77,
+        title: "Do not combine",
+        image_patch: imagePatch,
+        confirmation_token: preview.confirmation_token,
+      },
+      config,
+    );
+    expect(conflicting.errors).toContain(
+      "title must not be provided with image_patch.",
+    );
+
+    const published = await updateDraft(
+      {
+        draft_id: 77,
+        image_patch: imagePatch,
+        confirmation_token: preview.confirmation_token,
+      },
+      config,
+      {
+        now: later,
+        client: {
+          getDraft: async (draftId) => ({
+            id: draftId,
+            is_published: true,
+            raw: {},
+          }),
+          updateDraft: async (draftId) => ({ id: draftId, raw: {} }),
+        },
+      },
+    );
+    expect(published.errors).toContain(
+      "Refusing to update a draft that Substack does not report as an unpublished draft.",
+    );
+
+    const missingImage = await updateDraft(
+      {
+        draft_id: 77,
+        image_patch: imagePatch,
+        confirmation_token: preview.confirmation_token,
+      },
+      config,
+      {
+        now: later,
+        client: {
+          getDraft: async (draftId) => ({
+            id: draftId,
+            status: "draft",
+            draft_body: JSON.stringify({ type: "doc", content: [] }),
+            raw: {},
+          }),
+          updateDraft: async (draftId) => ({ id: draftId, raw: {} }),
+        },
+      },
+    );
+    expect(missingImage.errors).toContain(
+      "image_index 1 does not identify an existing native image.",
+    );
+  });
+
+  it("handles native patch client failures and response fallbacks", async () => {
+    const originalBody = JSON.stringify({
+      type: "doc",
+      content: [
+        {
+          type: "image2",
+          attrs: { src: "https://cdn.example.com/old.png" },
+        },
+      ],
+    });
+    const imagePatch = {
+      image_index: 1,
+      replacement_image_url: "https://cdn.example.com/new.png",
+    };
+    const preview = await previewDraftImagePatch(
+      { action: "update", draft_id: 77, image_patch: imagePatch },
+      config,
+      {
+        now,
+        client: {
+          getDraft: async (draftId) => ({
+            id: draftId,
+            status: "draft",
+            draft_body: originalBody,
+            raw: {},
+          }),
+        },
+      },
+    );
+    if (!preview.confirmation_token) {
+      throw new Error("Expected native image patch confirmation token.");
+    }
+
+    const failed = await updateDraft(
+      {
+        draft_id: 77,
+        image_patch: imagePatch,
+        confirmation_token: preview.confirmation_token,
+      },
+      config,
+      {
+        now: later,
+        client: {
+          getDraft: async () => {
+            throw new Error("request failed");
+          },
+          updateDraft: async (draftId) => ({ id: draftId, raw: {} }),
+        },
+      },
+    );
+    expect(failed.ok).toBe(false);
+
+    const succeeded = await updateDraft(
+      {
+        draft_id: 77,
+        image_patch: imagePatch,
+        confirmation_token: preview.confirmation_token,
+      },
+      config,
+      {
+        now: later,
+        client: {
+          getDraft: async (draftId) => ({
+            id: draftId,
+            title: "Existing title",
+            status: "draft",
+            draft_body: originalBody,
+            raw: {},
+          }),
+          updateDraft: async (draftId) => ({
+            id: draftId,
+            url: "https://example.substack.com/p/updated",
+            raw: {},
+          }),
+        },
+      },
+    );
+    expect(succeeded).toMatchObject({
+      ok: true,
+      draft_title: "Existing title",
+      draft_url: "https://example.substack.com/p/updated",
+    });
+  });
+
   it("updates an unpublished draft after a matching preview token", async () => {
     const input = {
       draft_id: 77,
@@ -711,7 +1113,7 @@ describe("updateDraft", () => {
     );
   });
 
-  it("returns conversion warnings from the rebuilt payload", async () => {
+  it("does not add a warning for native LaTeX conversion", async () => {
     const result = await updateDraft(
       {
         draft_id: 77,
@@ -742,9 +1144,7 @@ describe("updateDraft", () => {
     );
 
     expect(result.ok).toBe(true);
-    expect(result.warnings).toContain(
-      "LaTeX block mapping is provisional until a live Substack LaTeX fixture is captured; preview uses a latex code block fallback.",
-    );
+    expect(result.warnings).toEqual([]);
   });
 
   it("falls back to existing draft metadata when update response omits it", async () => {

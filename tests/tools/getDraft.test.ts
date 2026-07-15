@@ -81,10 +81,63 @@ describe("getDraft", () => {
     expect(result.ok).toBe(true);
     expect(result.include_body).toBe(true);
     expect(result.draft?.body).toBe('{"type":"doc","content":[]}');
+    expect(result.draft).toMatchObject({
+      body_format: "substack_native_v1",
+      body_sha256: expect.stringMatching(/^[0-9a-f]{64}$/u),
+      images: [],
+    });
     expect(result.draft).not.toHaveProperty("raw");
     expect(summarizeDraft(result)).toBe(
       "Substack draft 123 retrieved: Existing draft. Body included.",
     );
+  });
+
+  it("returns a one-based native image manifest for targeted patching", async () => {
+    const result = await getDraft(
+      { draft_id: 123, include_body: true },
+      config,
+      {
+        client: {
+          getDraft: async (draftId) => ({
+            id: draftId,
+            draft_body: JSON.stringify({
+              type: "doc",
+              content: [
+                {
+                  type: "captionedImage",
+                  content: [
+                    {
+                      type: "image2",
+                      attrs: {
+                        src: "https://cdn.example.com/image.png",
+                        alt: "Accessible diagram",
+                        title: "Tooltip metadata",
+                      },
+                    },
+                    {
+                      type: "caption",
+                      content: [{ type: "text", text: "Visible caption" }],
+                    },
+                  ],
+                },
+              ],
+            }),
+            raw: {},
+          }),
+        },
+      },
+    );
+
+    expect(result.draft?.images).toEqual([
+      {
+        native_index: 1,
+        url: "https://cdn.example.com/image.png",
+        format: "png",
+        alt_text: "Accessible diagram",
+        caption: "Visible caption",
+        title: "Tooltip metadata",
+      },
+    ]);
   });
 
   it("rejects oversized requested string bodies", async () => {
@@ -160,7 +213,7 @@ describe("getDraft", () => {
     ]);
   });
 
-  it("prefers body over draft_body when both are present", async () => {
+  it("prefers authoritative draft_body over body when both are present", async () => {
     const result = await getDraft(
       { draft_id: 123, include_body: true },
       config,
@@ -168,15 +221,16 @@ describe("getDraft", () => {
         client: {
           getDraft: async (draftId) => ({
             id: draftId,
-            body: { type: "doc" },
-            draft_body: "string draft body",
+            body: { type: "doc", content: [] },
+            draft_body: '{"type":"doc","content":[]}',
             raw: { id: draftId },
           }),
         },
       },
     );
 
-    expect(result.draft?.body).toEqual({ type: "doc" });
+    expect(result.draft?.body).toBe('{"type":"doc","content":[]}');
+    expect(result.draft?.body_format).toBe("substack_native_v1");
   });
 
   it("omits unsafe draft URLs from metadata output", async () => {

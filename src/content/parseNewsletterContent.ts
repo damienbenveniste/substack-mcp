@@ -7,7 +7,6 @@ import {
   type ContentStats,
   computeContentStats,
   type NewsletterBlock,
-  PROVISIONAL_LATEX_BLOCK_WARNING,
 } from "./newsletterBlocks.js";
 import { parseBlocks } from "./parseBlocks.js";
 import { parseMarkdown } from "./parseMarkdown.js";
@@ -104,14 +103,6 @@ export function parseNewsletterContent(
   }
 
   const parsedStats = computeContentStats(blocks);
-  if (parsedStats.latex_blocks > 0) {
-    warnings.push(PROVISIONAL_LATEX_BLOCK_WARNING);
-    if (input.strict) {
-      errors.push(
-        "LaTeX block mapping is provisional until a live Substack LaTeX fixture is captured; strict mode requires native LaTeX fixture compatibility.",
-      );
-    }
-  }
 
   const stats =
     errors.length > 0 && blocks.length === 0 ? EMPTY_STATS : parsedStats;

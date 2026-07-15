@@ -1,9 +1,10 @@
-import {
-  type ImageBlock,
-  type InlineSpan,
-  type ListItemBlock,
-  type NewsletterBlock,
-  PROVISIONAL_LATEX_BLOCK_WARNING,
+import { createHash } from "node:crypto";
+
+import type {
+  ImageBlock,
+  InlineSpan,
+  ListItemBlock,
+  NewsletterBlock,
 } from "./newsletterBlocks.js";
 
 export interface SubstackPmDoc {
@@ -29,11 +30,18 @@ export interface SubstackConversionResult {
   readonly warnings: readonly string[];
 }
 
+interface NativeNodeIdContext {
+  nextOrdinal: number;
+}
+
 export function toSubstackProseMirror(
   blocks: readonly NewsletterBlock[],
 ): SubstackConversionResult {
   const warnings = new Set<string>();
-  const content = blocks.flatMap((block) => blockToNodes(block, warnings));
+  const nativeNodeIds: NativeNodeIdContext = { nextOrdinal: 0 };
+  const content = blocks.flatMap((block) =>
+    blockToNodes(block, warnings, nativeNodeIds),
+  );
 
   return {
     doc: {
@@ -47,6 +55,7 @@ export function toSubstackProseMirror(
 function blockToNodes(
   block: NewsletterBlock,
   warnings: Set<string>,
+  nativeNodeIds: NativeNodeIdContext,
 ): readonly SubstackPmNode[] {
   switch (block.type) {
     case "paragraph":
@@ -63,7 +72,9 @@ function blockToNodes(
       return [
         withContent(
           "blockquote",
-          block.children.flatMap((child) => blockToNodes(child, warnings)),
+          block.children.flatMap((child) =>
+            blockToNodes(child, warnings, nativeNodeIds),
+          ),
           undefined,
         ),
       ];
@@ -71,7 +82,9 @@ function blockToNodes(
       return [
         withContent(
           "bullet_list",
-          block.items.map((item) => listItemToNode(item, warnings)),
+          block.items.map((item) =>
+            listItemToNode(item, warnings, nativeNodeIds),
+          ),
           undefined,
         ),
       ];
@@ -79,7 +92,9 @@ function blockToNodes(
       return [
         withContent(
           "ordered_list",
-          block.items.map((item) => listItemToNode(item, warnings)),
+          block.items.map((item) =>
+            listItemToNode(item, warnings, nativeNodeIds),
+          ),
           block.start ? { order: block.start } : undefined,
         ),
       ];
@@ -90,17 +105,26 @@ function blockToNodes(
     case "code_block":
       return [
         withContent(
-          "code_block",
+          "highlighted_code_block",
           [{ type: "text", text: block.code }],
-          block.language ? { lang: block.language } : undefined,
+          {
+            language: block.language ?? "plaintext",
+            nodeId: stableNativeNodeId(nativeNodeIds, "highlighted-code", [
+              block.language ?? "plaintext",
+              block.code,
+            ]),
+          },
         ),
       ];
     case "latex_block":
-      warnings.add(PROVISIONAL_LATEX_BLOCK_WARNING);
       return [
-        withContent("code_block", [{ type: "text", text: block.latex }], {
-          lang: "latex",
-        }),
+        {
+          type: "latex_block",
+          attrs: {
+            persistentExpression: block.latex,
+            id: stableNativeNodeId(nativeNodeIds, "latex", [block.latex]),
+          },
+        },
       ];
     case "embed_url":
       warnings.add(
@@ -125,15 +149,41 @@ function blockToNodes(
 function listItemToNode(
   item: ListItemBlock,
   warnings: Set<string>,
+  nativeNodeIds: NativeNodeIdContext,
 ): SubstackPmNode {
   const content = item.children.flatMap((child) =>
-    blockToNodes(child, warnings),
+    blockToNodes(child, warnings, nativeNodeIds),
   );
   return withContent(
     "list_item",
     content.length > 0 ? content : [withContent("paragraph", [], undefined)],
     undefined,
   );
+}
+
+function stableNativeNodeId(
+  context: NativeNodeIdContext,
+  kind: "highlighted-code" | "latex",
+  values: readonly string[],
+): string {
+  const ordinal = context.nextOrdinal;
+  context.nextOrdinal += 1;
+  const digest = createHash("sha256")
+    .update(
+      JSON.stringify({
+        namespace: "substack-mcp-native-node-v1",
+        kind,
+        ordinal,
+        values,
+      }),
+    )
+    .digest("hex");
+  const variant = (
+    (Number.parseInt(digest.slice(16, 17), 16) & 0x3) |
+    0x8
+  ).toString(16);
+
+  return `${digest.slice(0, 8)}-${digest.slice(8, 12)}-4${digest.slice(13, 16)}-${variant}${digest.slice(17, 20)}-${digest.slice(20, 32)}`;
 }
 
 function imageToNodes(
@@ -164,33 +214,24 @@ function imageToNodes(
     attrs.height = image.height;
   }
 
-  const nodes: SubstackPmNode[] = [
-    withContent(
-      "captionedImage",
-      [
-        {
-          type: "image2",
-          attrs,
-        },
-      ],
-      undefined,
-    ),
+  const content: SubstackPmNode[] = [
+    {
+      type: "image2",
+      attrs,
+    },
   ];
 
   if (image.caption) {
-    warnings.add(
-      "Image captions use a following paragraph fallback until the native caption fixture is captured.",
-    );
-    nodes.push(
+    content.push(
       withContent(
-        "paragraph",
+        "caption",
         [{ type: "text", text: image.caption }],
         undefined,
       ),
     );
   }
 
-  return nodes;
+  return [withContent("captionedImage", content, undefined)];
 }
 
 function inlineSpansToNodes(

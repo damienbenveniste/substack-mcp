@@ -6,8 +6,7 @@ import {
   type ToolCaller,
 } from "../../scripts/smokeValidateTool.js";
 
-const latexWarning =
-  "LaTeX block mapping is provisional until a live Substack LaTeX fixture is captured; preview uses a latex code block fallback.";
+const tableWarning = "Markdown tables are not supported in V1.";
 
 describe("assertValidateNewsletterContentTool", () => {
   it("calls validate_newsletter_content with the rich Markdown fixture and returns summary stats", async () => {
@@ -21,7 +20,7 @@ describe("assertValidateNewsletterContentTool", () => {
           structuredContent: {
             ok: true,
             errors: [],
-            warnings: [latexWarning],
+            warnings: [tableWarning],
             stats: {
               blocks: 16,
               words: 42,
@@ -71,7 +70,7 @@ describe("assertValidateNewsletterContentTool", () => {
             action: "create",
             title: "[MCP SMOKE] Rich Draft Preview",
             preview_text: "Preview text.",
-            warnings: [latexWarning],
+            warnings: [tableWarning],
             stats: {
               blocks: 16,
               words: 42,
@@ -189,7 +188,7 @@ describe("assertValidateNewsletterContentTool", () => {
         previewClient({ ...validPreviewStructured(), warnings: [] }),
       ),
     ).rejects.toThrow(
-      "preview_draft did not return the LaTeX fixture warning.",
+      "preview_draft did not return the table fixture warning.",
     );
 
     await expect(
@@ -263,7 +262,7 @@ describe("assertValidateNewsletterContentTool", () => {
           isError: false,
           structuredContent: {
             ok: true,
-            warnings: [latexWarning],
+            warnings: [tableWarning],
             stats: {
               blocks: 15,
               words: 42,
@@ -290,7 +289,7 @@ function validPreviewStructured(): Record<string, unknown> {
     action: "create",
     title: "[MCP SMOKE] Rich Draft Preview",
     preview_text: "Preview text.",
-    warnings: [latexWarning],
+    warnings: [tableWarning],
     stats: {
       blocks: 16,
       words: 42,

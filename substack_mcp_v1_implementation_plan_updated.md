@@ -824,8 +824,22 @@ Input:
 
 ```ts
 {
+  source_type?: "url" | "base64" | "svg" | "card",
   image_url?: string,
   image_base64?: string,
+  svg?: string,
+  card?: {
+    width: number,
+    height: number,
+    title: string,
+    subtitle?: string,
+    footer?: string,
+    background?: string,
+    foreground?: string
+  },
+  output_format?: "png",
+  max_width?: number,
+  max_height?: number,
   alt_text?: string,
   caption?: string,
   filename_hint?: string
@@ -834,21 +848,35 @@ Input:
 
 Rules:
 
-- Exactly one of `image_url` or `image_base64` must be provided.
-- `image_url` must be `https://` or `http://`.
-- Fetch max size must respect `MAX_IMAGE_BYTES`.
-- Allowed MIME types: `image/avif`, `image/gif`, `image/jpeg`, `image/png`, `image/webp`.
-- Convert fetched image to `data:<mime>;base64,<payload>` before calling Substack if Substack's endpoint requires that shape.
-- Do not support arbitrary local file paths in HTTP mode. If supporting `file_path` for stdio mode later, restrict it to an allowlisted local directory.
+- Existing calls remain compatible: when `source_type` is omitted, exactly one of `image_url` or `image_base64` selects the source.
+- Explicit sources require exactly one matching field: `image_url`, `image_base64`, `svg`, or `card`.
+- `image_url` must be public `https://` or `http://`, must resolve only to public addresses, must not redirect, and must respect timeout and streamed-size limits.
+- Parse SVG as untrusted data and reject scripts, event handlers, external references, foreign content, entities, processing instructions, and unsafe CSS.
+- Decode, validate dimensions/pixels, auto-orient, fit within the requested/default bounds, convert to sRGB PNG, enforce `MAX_IMAGE_BYTES`, and reopen the PNG before upload.
+- V1 output is PNG only. Do not support arbitrary local file paths. If supporting `file_path` for stdio mode later, restrict it to an allowlisted local directory.
 
 Output:
 
 ```ts
 {
   ok: boolean,
-  image_url: string,
+  errors: string[],
+  error?: {
+    code: string,
+    message: string,
+    stage: "source" | "download" | "sanitization" | "decode" | "normalization" | "validation" | "upload"
+  },
+  image_url?: string,
+  filename?: string,
+  format?: "png",
+  width?: number,
+  height?: number,
+  size_bytes?: number,
+  sha256?: string,
+  source_type?: "url" | "base64" | "svg" | "card",
   alt_text?: string,
   caption?: string,
+  warnings: string[],
   message: string
 }
 ```
@@ -1129,6 +1157,15 @@ Existing code suggests this shape may work:
         "fullscreen": false,
         "belowTheFold": false
       }
+    },
+    {
+      "type": "caption",
+      "content": [
+        {
+          "type": "text",
+          "text": "Optional caption"
+        }
+      ]
     }
   ]
 }
@@ -1141,8 +1178,8 @@ Implementation requirements:
 - `upload_image` returns a URL.
 - The image block should use the returned URL.
 - Store alt text when the Substack payload supports it.
-- Store caption when the Substack payload supports it.
-- If caption storage shape is uncertain, use a following paragraph as a fallback caption and return a warning.
+- Store captions as a native `caption` child of `captionedImage`, after the `image2` child.
+- Keep live fixture capture and editor-rendering verification as an acceptance requirement because the API remains unofficial.
 
 ### 11.5 LaTeX block mapping
 
@@ -1172,10 +1209,11 @@ Create `scripts/inspectDraft.ts` and follow this required discovery procedure:
 
 Do not mark V1 complete until LaTeX fixtures round-trip successfully.
 
-Fallback only for development:
+Current implementation status:
 
-- If LaTeX node shape is unknown, `validate_newsletter_content` should return an error in strict mode.
-- Non-strict mode may convert LaTeX to a code block labeled `latex` with a warning, but this does **not** satisfy V1 completion.
+- The current editor schema identifies native equations as `latex_block` nodes with `persistentExpression` and `id` attributes.
+- `validate_newsletter_content` accepts LaTeX in strict mode, and preview/write conversion emits that native shape with deterministic IDs.
+- Live fixture round-trip and manual editor/preview rendering remain required for V1 completion.
 
 ### 11.6 Embeds and raw HTML
 

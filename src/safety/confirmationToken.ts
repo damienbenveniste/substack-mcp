@@ -85,6 +85,32 @@ export function verifyConfirmationToken(
   subject: ConfirmationTokenSubject,
   options: Pick<CreateConfirmationTokenOptions, "secret" | "now">,
 ): VerifyConfirmationTokenResult {
+  const integrity = verifyConfirmationTokenIntegrity(token, options);
+  if (!integrity.ok) {
+    return integrity;
+  }
+
+  const parsedPayload = integrity.payload;
+  const expectedPayload = createPayload(
+    subject,
+    parsedPayload.issued_at,
+    parsedPayload.expires_at,
+  );
+
+  if (stableStringify(parsedPayload) !== stableStringify(expectedPayload)) {
+    return {
+      ok: false,
+      error: "Confirmation token does not match the current draft input.",
+    };
+  }
+
+  return integrity;
+}
+
+export function verifyConfirmationTokenIntegrity(
+  token: string,
+  options: Pick<CreateConfirmationTokenOptions, "secret" | "now">,
+): VerifyConfirmationTokenResult {
   const [payloadSegment, signatureSegment, extraSegment] = token.split(".");
   if (!payloadSegment || !signatureSegment || extraSegment !== undefined) {
     return { ok: false, error: "Malformed confirmation token." };
@@ -109,19 +135,6 @@ export function verifyConfirmationToken(
   const nowSeconds = secondsFromDate(options.now ?? new Date());
   if (parsedPayload.expires_at <= nowSeconds) {
     return { ok: false, error: "Confirmation token has expired." };
-  }
-
-  const expectedPayload = createPayload(
-    subject,
-    parsedPayload.issued_at,
-    parsedPayload.expires_at,
-  );
-
-  if (stableStringify(parsedPayload) !== stableStringify(expectedPayload)) {
-    return {
-      ok: false,
-      error: "Confirmation token does not match the current draft input.",
-    };
   }
 
   return {

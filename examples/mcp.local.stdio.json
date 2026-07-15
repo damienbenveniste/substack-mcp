@@ -1,13 +1,13 @@
 {
   "mcpServers": {
     "substack-drafts": {
-      "command": "node",
-      "args": ["/absolute/path/to/substack-mcp/dist/stdio.js"],
+      "command": "/bin/sh",
+      "args": [
+        "-c",
+        "cd '/absolute/path/to/substack-mcp' && exec node dist/stdio.js"
+      ],
       "env": {
-        "SUBSTACK_PUBLICATION_URL": "https://yourpublication.substack.com",
-        "SUBSTACK_SESSION_TOKEN": "<session-token>",
-        "SUBSTACK_USER_ID": "<user-id>",
-        "PREVIEW_TOKEN_SECRET": "<32-plus-random-bytes>",
+        "MCP_TRANSPORT": "stdio",
         "AUTH_MODE": "noauth"
       }
     }

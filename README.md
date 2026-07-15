@@ -8,46 +8,15 @@ Private MCP server for validating, previewing, creating, and updating Substack n
 
 This project is draft-only. V1 must not publish, schedule, delete, email, or create public Substack Notes. Users review and publish manually inside Substack.
 
-Current implementation status:
+## What It Does
 
-- HTTP MCP endpoint at `/mcp`.
-- stdio MCP entrypoint for local MCP clients.
-- `validate_newsletter_content` tool for `markdown_v1` and `blocks_v1`.
-- `preview_draft` tool that converts content to a minimized Substack draft-body preview and returns an HMAC confirmation token.
-- `list_drafts` and `get_draft` read-only tools backed by the Substack API client.
-- `create_draft` and `update_draft` write tools that require a matching `preview_draft` confirmation token and remain draft-only.
-- `upload_image` tool for uploading base64/data-URI or remote `http(s)` images to Substack.
-- Substack API client scaffolding for auth validation, draft list/get/create/update, and image upload using typed errors plus secret and draft-payload redaction in client-visible error text.
-- `npm run auth:setup` guided loopback onboarding that can import the Substack session from the most recently used macOS Chrome profile after explicit confirmation, derive the numeric user ID, generate the preview-signing secret, remove the temporary cookie-store copy, and atomically save all four runtime values in an ignored owner-only local auth file. Isolated Chrome sign-in and manual cookie entry remain fallbacks.
-- `npm run inspect:draft -- <draft_id>` utility for inspecting a live draft payload during fixture discovery, with fixture-targeted output, custom fixture directories, and opt-in raw-response capture restricted to stdout or ignored `.data/` files.
-- `npm run create:fixture -- --dry-run` utility for validating the rich Markdown fixture, one purpose-built live fixture kind, or the full required fixture set with `--kind all`; without `--dry-run`, it creates the matching fixture draft or drafts, and `--capture` fetches created purpose-built drafts back into `fixtures/substack/`.
-- `npm run fixtures:status` utility for checking which required live Substack draft-body fixtures are present, parseable, feature-shaped, and adapter-compatible, with per-fixture next actions and `--require-all` for a release gate once fixtures are expected.
-- `npm run smoke:docker-http` utility for building the Docker image, running the HTTP server in a local container, checking `/healthz`, listing tools through Streamable HTTP, verifying the exact V1 tool surface, and calling `validate_newsletter_content` plus `preview_draft` with the rich fixture without calling Substack.
-- `npm run smoke:http-local` utility for launching the built HTTP server, checking `/healthz`, listing tools through Streamable HTTP, verifying the exact V1 tool surface, and calling `validate_newsletter_content` plus `preview_draft` with the rich fixture without calling Substack.
-- `npm run smoke:inspector` utility for running the local HTTP smoke with MCP Inspector CLI `tools/list` enabled for gate 3 evidence.
-- `npm run smoke:http-static-bearer` utility for launching the built HTTP server in `AUTH_MODE=static_bearer`, verifying missing/wrong bearer tokens return `401`, then listing the exact V1 tool surface and calling `validate_newsletter_content` plus `preview_draft` with the correct bearer token.
-- `npm run smoke:http-oauth` utility for launching the built HTTP server in `AUTH_MODE=oauth`, serving local HTTPS authorization-server discovery and JWKS metadata with a throwaway key, verifying OAuth metadata/challenges, then listing the exact V1 tool surface and calling `validate_newsletter_content` plus `preview_draft` with a signed JWT.
-- `npm run smoke:stdio` utility for launching the built stdio server, listing tools through MCP stdio, verifying the exact V1 tool surface, and calling `validate_newsletter_content` plus `preview_draft` with the rich fixture without calling Substack.
-- `npm run smoke:remote -- --url <https://host/mcp>` utility for verifying remote HTTPS static bearer auth, missing/wrong bearer `401` rejection, remote `/healthz`, the V1 tool surface, and `validate_newsletter_content` plus `preview_draft` with the rich fixture without calling Substack.
-- `npm run smoke:ngrok-noauth` utility for launching local HTTP in noauth mode, starting ngrok, discovering the HTTPS tunnel, then running the remote noauth smoke and optional gate 11 evidence artifact, with an optional bounded hold-open window for ChatGPT acceptance.
-- `npm run smoke:ngrok-oauth` utility for launching local HTTP in OAuth mode behind ngrok with generated local authorization-server discovery, JWKS, and JWT material, verifying public protected-resource metadata and remote OAuth smoke without calling Substack.
-- `npm run smoke:ngrok-static-bearer` utility for launching local HTTP in static-bearer mode, starting ngrok, verifying remote bearer rejection, then running the remote static-bearer smoke and optional gate 14 evidence artifact, with an optional bounded hold-open window for a real header-capable client.
-- `npm run smoke:remote-noauth -- --url <https://host/mcp>` utility for verifying short-lived noauth ngrok/ChatGPT-style HTTPS endpoints, remote `/healthz`, the V1 tool surface, and `validate_newsletter_content` plus `preview_draft` with the rich fixture without calling Substack.
-- `npm run smoke:remote-oauth -- --url <https://host/mcp>` utility for verifying a remote OAuth-protected HTTPS endpoint, remote `/healthz`, protected-resource metadata, authorization-server/OIDC discovery with authorization-code and PKCE S256 support, the V1 tool surface, and `validate_newsletter_content` plus `preview_draft` with a real OAuth access token without calling Substack, plus a structured OAuth launch-review artifact for the real browser login and ChatGPT connector checks.
-- `npm run cloud-run:logs:verify -- --logs-json <path>` utility for checking exported Cloud Run logs for secret-like values, private MCP path segments, draft-body fields, and audit events that contain anything beyond safe metadata.
-- `npm run cloud-run:plan -- --project-id <id> --publication-url <url> --user-id <id>` utility for generating a no-secret Cloud Run deployment command plan with auth-mode-specific Secret Manager wiring, optional `MCP_PATH_SECRET` Secret Manager wiring, gate 12/13 evidence artifact commands, a $5/month budget-alert follow-up, follow-up smoke commands, and gate 16 log export/verification commands.
-- `npm run cloud-run:verify -- --service-json <path>` utility for verifying exported Cloud Run service JSON has the expected HTTPS service URL, min/max instances, service account, production HTTP runtime env, optional exact non-secret runtime values such as publication URL/user ID/limits/timeouts, OAuth metadata env when `AUTH_MODE=oauth`, and Secret Manager references, including optional `MCP_PATH_SECRET`, without reading secret values.
-- `npm run v1:preflight`, `npm run v1:record`, `npm run v1:runbook`, and `npm run v1:status` utilities for checking no-secret live prerequisites, including live evidence artifact path safety, OAuth remote metadata, and Cloud Billing budget-alert readiness, recording evidence, preparing runbooks and local evidence templates, and reporting the 17 V1 acceptance gates, separating repo-local evidence from manual/live requirements with an optional local evidence-file overlay, custom fixture directory support, and optional Cloud Run `MCP_PATH_SECRET` runbook commands.
-- `npm run validate:v1-local` utility for running the complete repo-local V1 acceptance matrix used by CI without requiring live Substack credentials, ngrok, ChatGPT, Cloud Run, or real MCP clients.
-- Body-safe runtime and audit logging for HTTP write/image operations; HTTP responses expose an `X-Request-Id` that matches structured request logs and HTTP audit log entries, audit records include operation metadata only, and logger redaction covers credentials, draft bodies, Markdown/request/raw bodies, idempotency keys, image URLs and payloads, confirmation tokens, and optional `MCP_PATH_SECRET` URL segments.
-- OAuth protected-resource metadata, bearer challenges, JWT/JWKS access-token verification, and tool-level scope checks.
-- Stateless Streamable HTTP transport with JSON responses and CORS headers for OAuth metadata, `authorization`, `mcp-session-id`, `last-event-id`, and `mcp-protocol-version`.
-- Local HTTP binds to `127.0.0.1` by default outside production; production defaults to `0.0.0.0` for Cloud Run unless `HOST` is set.
-- Markdown support for headings, paragraphs, rich inline text, links, blockquotes, lists, horizontal rules, images, code blocks, LaTeX blocks, and explicit `:::image` / `:::latex` directives.
-- Draft content URLs are constrained to public `http(s)` URLs: unsafe Markdown links/images are dropped with warnings, and unsafe `blocks_v1` URLs fail validation.
-- Raw HTML is rejected before preview or write-token generation. Other unsupported Markdown features such as tables, task lists, nested lists, footnotes, strikethrough, inline math, and unresolved link references are reported as warnings unless strict validation is requested.
-- Strict validation rejects LaTeX until the native Substack LaTeX node shape is verified from a live fixture; non-strict previews keep a warning-backed `code_block` fallback.
-- Dockerfile, security notes, implementation notes, and local/remote MCP client examples.
+- Exposes seven draft-only MCP tools over Streamable HTTP or stdio: `list_drafts`, `get_draft`, `validate_newsletter_content`, `preview_draft`, `create_draft`, `update_draft`, and `upload_image`.
+- Converts Markdown or structured blocks into Substack's editor format, including native code blocks, display LaTeX, images, alt text, and captions.
+- Requires a matching `preview_draft` confirmation token before creating or updating a draft.
+- Accepts exact image artifacts, public image URLs, base64/data URIs, SVG, or generated cards and reports source and processed fingerprints.
+- Keeps Substack credentials server-side and redacts secrets and draft content from normal logs and client-visible errors.
+
+Start with [Quickstart](#quickstart), then follow the [client setup guide](docs/CLIENT_SETUP.md) for a stable ngrok URL, ChatGPT, Claude, Claude Desktop, or Claude Code.
 
 ## Supported Formatting
 
@@ -60,18 +29,86 @@ Markdown and `blocks_v1` URLs must be public `http(s)` URLs. Unsafe links and im
 ## Known Limitations
 
 - Substack's draft API and editor document shape are unofficial and may change without notice.
-- Live fixture-backed Substack node mappings for images, code blocks, and native LaTeX still require real captured draft-body fixtures before V1 can be called complete.
-- Strict validation rejects LaTeX until the native Substack LaTeX node shape is verified; non-strict previews use a warning-backed code-block fallback.
-- Live Cloud Run deployment, ChatGPT connector acceptance, real OAuth login, and Claude Code/Cursor stdio acceptance remain manual V1 gates.
+- Images and native captions use the current `captionedImage`/`image2` editor shape, but still require a real captured draft-body fixture and manual rendering review before their provisional mapping can be called complete. Native highlighted-code and LaTeX mappings have the same live-verification boundary.
+- Live hosted deployment, real OAuth login, and acceptance in third-party MCP clients remain manual V1 gates.
 - This server creates and updates drafts only. Publishing, scheduling, deleting, emailing, and public Substack Notes are intentionally out of scope for V1.
 
 ## Tool Flow
 
-Use `list_drafts` to find recent draft IDs from metadata-only summaries and `get_draft` to fetch draft metadata. `get_draft` omits the draft body by default; pass `include_body: true` when body inspection is needed. Requested draft bodies are checked against `MAX_BODY_BYTES` before they are returned.
+Use `list_drafts` to find recent draft IDs from metadata-only summaries and `get_draft` to fetch draft metadata. `get_draft` omits the draft body by default; pass `include_body: true` when body inspection is needed. The native `draft_body` response field is authoritative, with `body` used only as a compatibility fallback. When the selected body is recognized as native Substack JSON, the response also includes `body_format: "substack_native_v1"`, a `body_sha256`, and a one-based `images` manifest. Requested draft bodies are checked against `MAX_BODY_BYTES` before they are returned.
 
 Draft URLs returned by `list_drafts`, `get_draft`, `create_draft`, and `update_draft` are filtered before reaching MCP clients. URLs with unsupported protocols, embedded usernames/passwords, localhost hosts, or private-network hosts are omitted; write tools include a warning when they omit a candidate draft URL.
 
-Use `upload_image` to upload a remote public `http(s)` image URL or base64/data-URI image before referencing it in draft content. The tool rejects URLs with embedded usernames/passwords, rejects localhost/private-network URLs, does not follow remote image redirects, bounds remote fetches with `SUBSTACK_REQUEST_TIMEOUT_MS`, round-trips base64 data before upload, enforces `MAX_IMAGE_BYTES` from declared `Content-Length` and streamed actual bytes, cancels remote reads after the limit is exceeded, allows only Substack-supported image MIME types, requires raw-base64 `filename_hint` values to be simple filenames with supported image extensions, and verifies that Substack returns a public `http(s)` URL before handing it back.
+Use `upload_image` before referencing a new image in draft content. When the image was generated or uploaded in the current conversation, pass that exact artifact through `image_file`. Never redraw, recreate, simplify, or substitute another image merely to satisfy the schema. Use `image_url` only for an existing remote image and `image_base64` only when neither file nor URL input is available. Existing URL and base64 calls remain compatible.
+
+Legacy `svg` and `card` sources remain available only when the user explicitly requests that exact server-rendered source. They must never be used as a fallback for an unavailable generated or uploaded artifact.
+
+`image_file` accepts either the complete file object supplied by an MCP client or an absolute mounted local path. Remote file objects must include a downloadable URL; opaque placeholders are rejected with `SOURCE_ARTIFACT_UNAVAILABLE` rather than being replaced. Local paths are disabled by default and must resolve inside one of the comma-separated `IMAGE_FILE_ROOTS` directories. The resolver uses the exact path, verifies real-path containment, and never searches neighboring files or selects the most recent image.
+
+All accepted sources pass through decode, validation, auto-orientation, visual-fidelity comparison, sRGB PNG encoding, reopen verification, checksum, and upload. Source dimensions are preserved by default unless explicit bounds require resizing. Successful results include `source` and `processed` metadata with filename, detected format, MIME type, dimensions, color mode, byte size, and SHA-256; file inputs also include a source artifact identifier. `preview_url` is the exact uploaded URL. Structured `warning_details` report format conversion, resizing, aspect-ratio change, large size reduction, color-mode change, transparency removal, stripped metadata, and suspicious output; the legacy `warnings` string list remains for compatibility. `allow_resize: false` rejects a required resize, and unexpected aspect-ratio or color-to-monochrome changes fail before upload unless explicitly allowed.
+
+Image operations are deliberately separate: `upload_image` uploads media only, `preview_draft` previews insertion or a targeted replacement and lists every exact image URL plus its dimensions, alt text, caption, and title, and `create_draft` or `update_draft` performs the confirmed draft write. `alt_text` is accessibility text. `caption` is visible newsletter text represented by the native Substack caption child; `title` is separate image metadata. Neither is inserted by `upload_image` alone.
+
+To replace one image in an existing rich draft without reconstructing its body:
+
+1. Call `upload_image` and retain its exact uploaded `image_url`.
+2. Call `get_draft` with `include_body: true`, then select either the current image URL or the one-based `native_index` from `draft.images`.
+3. Call `preview_draft` with `action: "update"`, the `draft_id`, and `image_patch`. Provide exactly one selector: `match_image_url` or `image_index`.
+4. Review the returned complete image manifest and patch hashes, then call `update_draft` with the identical `draft_id`, `image_patch`, and `confirmation_token`.
+
+```json
+{
+  "action": "update",
+  "draft_id": 123,
+  "image_patch": {
+    "image_index": 2,
+    "replacement_image_url": "https://substackcdn.com/image/fetch/...",
+    "alt_text": "Architecture diagram",
+    "caption": "Updated platform architecture"
+  }
+}
+```
+
+Omit `alt_text`, `caption`, `title`, `width`, or `height` to preserve its current value; pass `null` to remove it explicitly. Do not combine `image_patch` with body or metadata fields. The server fetches the authoritative native body, changes exactly one `image2` node, preserves all other JSON fields, and binds the patched body to the confirmation token. If the body changes between preview and the update check, the token is rejected as stale. Caption changes require an existing native `captionedImage` container; the server never inserts a paragraph fallback.
+
+Exact local file source:
+
+```json
+{
+  "source_type": "file",
+  "image_file": "/absolute/allowlisted/path/architecture-diagram.png",
+  "alt_text": "Architecture diagram for the multi-tenant platform",
+  "caption": "Multi-tenant AI platform reference architecture."
+}
+```
+
+SVG source:
+
+```json
+{
+  "source_type": "svg",
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"800\" height=\"400\"><rect width=\"800\" height=\"400\" fill=\"#ffffff\"/><text x=\"40\" y=\"210\" font-size=\"48\">Hello</text></svg>",
+  "filename_hint": "hello.png"
+}
+```
+
+Generated card source:
+
+```json
+{
+  "source_type": "card",
+  "card": {
+    "width": 1200,
+    "height": 630,
+    "title": "Scaled dot-product attention",
+    "subtitle": "A visual guide",
+    "footer": "The AI Edge"
+  },
+  "alt_text": "Article title card"
+}
+```
+
+Remote URLs must be public `http(s)` URLs without embedded credentials. The tool rejects private or localhost hosts and private DNS resolutions, does not follow redirects, bounds downloads with `SUBSTACK_REQUEST_TIMEOUT_MS`, and enforces `MAX_IMAGE_BYTES` against declared, streamed, and normalized bytes. SVG input is parsed as untrusted data and rejects scripts, event handlers, external references, foreign content, entities, processing instructions, and unsafe CSS. Local `image_file` paths require the explicit `IMAGE_FILE_ROOTS` allowlist and are intended for local or mounted stdio/server deployments; they do not grant a remote server access to files on the caller's machine.
 
 Use `validate_newsletter_content` to check Markdown or `blocks_v1` content without generating a write token. Markdown links and image/directive URLs must be public `http(s)` URLs to become clickable or image nodes; unsafe Markdown URLs are reported as unsupported features. Explicit `blocks_v1` `href`, `src`, and `url` fields fail validation unless they are public `http(s)` URLs.
 
@@ -89,11 +126,22 @@ caption: Local and hosted MCP paths
 :::
 ```
 
+A fenced block whose language is exactly `latex` is also treated as display math rather than highlighted source code:
+
+````md
+```latex
+\operatorname{Attention}(Q,K,V)=\operatorname{softmax}\left(\frac{QK^\top}{\sqrt{d_k}}\right)V
+```
+````
+
+Other fenced languages, including `python`, remain native highlighted-code blocks.
+
 Use `preview_draft` before any future write action. It returns:
 
 - A short `preview_text`.
 - Formatting and fidelity warnings.
 - Draft stats.
+- An `images` manifest containing every exact URL to be inserted and any supplied dimensions, format, alt text, caption, and title.
 - A `confirmation_token` bound to the action, draft id, title, subtitle, audience, and generated draft payload.
 - A `confirmation_expires_at` timestamp.
 
@@ -105,7 +153,7 @@ Title and subtitle metadata are trimmed and whitespace-collapsed before confirma
 
 `create_draft` also accepts an optional `idempotency_key` to reduce accidental duplicate draft creation. Successful creates are remembered in memory for the preview-token TTL. A repeat call with the same key and same generated draft payload returns the original draft result without another Substack create call; reusing the same key for different draft input is rejected. This cache is per running process only and is not durable across restarts, redeployments, or multiple Cloud Run instances.
 
-`update_draft` updates only fields provided by the caller. It can update the body plus metadata, or metadata only. Update payloads omit create-only fields such as `type`. If no audience is provided, it preserves the current audience instead of defaulting to `everyone`. It refuses to update drafts that Substack does not report as plain unpublished drafts. A fetched draft must include a positive draft/unpublished marker such as `status: "draft"`, `status: "unpublished"`, `draft: true`, `is_draft: true`, or `is_published: false`; explicit non-draft `status`, `draft: false`, `is_draft: false`, `is_published`, `published_at`, or `post_date` markers still block the update.
+`update_draft` updates only fields provided by the caller. It can update the body plus metadata, metadata only, or one native image through `image_patch`. Ordinary body input is a full replacement and must contain everything the caller wants to preserve; the targeted image path instead patches the fetched native JSON and sends only `draft_body`. Update payloads omit create-only fields such as `type`. If no audience is provided, it preserves the current audience instead of defaulting to `everyone`. It refuses to update drafts that Substack does not report as plain unpublished drafts. A fetched draft must include a positive draft/unpublished marker such as `status: "draft"`, `status: "unpublished"`, `draft: true`, `is_draft: true`, or `is_published: false`; explicit non-draft `status`, `draft: false`, `is_draft: false`, `is_published`, `published_at`, or `post_date` markers still block the update.
 
 Use `npm run inspect:draft -- <draft_id>` only when you have local Substack credentials configured and need to inspect a live draft payload. Configuration loads `.env.local` first, then `.data/substack-auth.json`, then `.env`, without replacing values already present in the process. The script prints a JSON payload with the parsed `draft_body` when possible. It omits the full raw Substack response unless `--include-raw` is passed. Raw response inclusion is allowed only for stdout or an explicit `--output .data/<file>.json` private inspection file; `--fixture` captures always stay compact, non-raw, and body-only by writing the parsed `draft_body` without draft title, subtitle, audience, or raw metadata. To write one of the expected adapter fixtures directly, use `npm run inspect:draft -- <draft_id> --fixture latex-block`, replacing `latex-block` with `inline-marks`, `image`, or `code-block` as needed. Pass `--fixture-dir <project-local-dir>` when the target fixture set is outside `fixtures/substack/`.
 
@@ -311,13 +359,15 @@ npm run smoke:stdio
 npm run smoke:stdio -- --evidence-artifact .data/v1/gate-15-stdio-client.md
 ```
 
-Generic stdio config is in `examples/mcp.local.stdio.json`. Point the `args` path at the absolute path to `dist/stdio.js` in this checkout.
+Generic stdio config is in `examples/mcp.local.stdio.json`. Replace the repository path in its shell command. The command changes into this checkout so the server can read the ignored `.data/substack-auth.json` file without copying Substack secrets into the MCP client configuration.
+
+Step-by-step Claude Desktop and Claude Code instructions are in the [client setup guide](docs/CLIENT_SETUP.md#connect-a-local-stdio-client).
 
 `npm run smoke:stdio` launches `node dist/stdio.js`, lists tools over MCP stdio, verifies the exact V1 draft-only tool surface, and calls `validate_newsletter_content` plus `preview_draft` with the rich fixture. It uses safe local smoke-test env defaults and does not call Substack or run write tools. Add `--evidence-artifact .data/v1/gate-15-stdio-client.md` to write a sanitized Markdown artifact with current local stdio smoke proof, the remaining Claude Code/Cursor manual checklist, and structured fields for the tested client version, Claude Code/Cursor stdio config path or add command, stdio entrypoint path, tool-list result, validation result, and local-credentials review.
 
 Remote HTTP config with static bearer auth is in `examples/mcp.remote.http.json`.
 
-Claude Code setup examples are in `examples/claude-code.md`. The local stdio example passes Substack credentials through the local process environment only. The remote HTTP examples keep Substack credentials on the server and use either a client bearer header for `AUTH_MODE=static_bearer` or an OAuth login flow for `AUTH_MODE=oauth`.
+Claude Code setup examples are in `examples/claude-code.md`. The local stdio example changes into this checkout and reads the ignored local auth file; it does not persist Substack credentials in Claude Code configuration. The remote HTTP examples keep Substack credentials on the server and use either a client bearer header for `AUTH_MODE=static_bearer` or an OAuth login flow for `AUTH_MODE=oauth`.
 
 Cursor examples are split by transport:
 
@@ -370,38 +420,58 @@ npm run smoke:ngrok-oauth -- --evidence-artifact .data/v1/remote-oauth.md
 
 The command starts ngrok, serves local HTTPS authorization-server discovery and JWKS metadata with a throwaway key, launches `node dist/http.js` in `AUTH_MODE=oauth` with the ngrok origin as `MCP_PUBLIC_BASE_URL`, signs a JWT for that public resource, checks remote `/healthz`, verifies OAuth protected-resource metadata, authorization-server discovery, and metadata CORS/preflight behavior from the public origin, lists the exact V1 draft-only tools, and calls the read-only validation and preview tools with the rich fixture. It does not call Substack, run write tools, or complete a browser authorization-code flow; real ChatGPT OAuth acceptance still requires an intended authorization server and connector login. When `--evidence-artifact .data/v1/remote-oauth.md` is supplied, fill the manual launch-review section after that real login flow rather than treating the generated JWT smoke as launch proof; the launch checklist must be fully checked before the artifact can pass the evidence scanner.
 
-## ngrok and ChatGPT
+## Remote MCP Clients with ngrok
 
-For short-lived local ChatGPT developer-mode testing, build and run the combined local HTTP/ngrok/noauth smoke:
+ChatGPT and Claude remote connectors need a public HTTPS endpoint. An ngrok account includes an automatically assigned Dev Domain that stays the same across tunnel restarts, so the connector URL does not need to change every time.
+
+1. Create an account at [ngrok](https://dashboard.ngrok.com/signup) and install the ngrok agent.
+2. Copy the authtoken from the ngrok dashboard and add it once:
+
+   ```bash
+   ngrok config add-authtoken YOUR_NGROK_AUTHTOKEN
+   ```
+
+3. Find the assigned `*.ngrok-free.dev` hostname in **Domains** in the ngrok dashboard.
+4. Start the built MCP server in one terminal:
+
+   ```bash
+   npm run build
+   npm run mcp:preflight -- --require-live
+   AUTH_MODE=noauth HOST=127.0.0.1 PORT=8787 npm run start:http
+   ```
+
+5. Start the tunnel with that exact hostname in another terminal:
+
+   ```bash
+   ngrok http --url YOUR_ASSIGNED_DOMAIN.ngrok-free.dev 8787
+   ```
+
+6. Verify the public endpoint before adding it to a client:
+
+   ```bash
+   npm run smoke:remote-noauth -- \
+     --url https://YOUR_ASSIGNED_DOMAIN.ngrok-free.dev/mcp
+   ```
+
+Register `https://YOUR_ASSIGNED_DOMAIN.ngrok-free.dev/mcp` in the remote MCP client. The hostname is stable, but the endpoint is online only while both the local server and ngrok process are running.
+
+### ChatGPT
+
+Enable developer mode, create a custom app in **Settings > Apps**, and use the stable HTTPS `/mcp` URL with no authentication for this short-lived local flow. Availability and workspace controls vary by plan. See the complete [ChatGPT tutorial](docs/CLIENT_SETUP.md#chatgpt-remote) and [OpenAI's current setup guide](https://help.openai.com/en/articles/12584461-developer-mode-and-mcp-apps-in-chatgpt).
+
+### Claude
+
+Add the same HTTPS `/mcp` URL as a custom connector, then enable it for the conversation. Organization-managed plans may require an owner to add the connector first. Claude Desktop and Claude Code can also run the local stdio transport without ngrok. See the [Claude tutorials](docs/CLIENT_SETUP.md#claude-remote) and [Anthropic's remote connector guide](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp).
+
+`AUTH_MODE=noauth` is for short-lived personal testing only. Anyone who discovers the live endpoint can call it while the tunnel is running. Keep the URL private, stop both processes after testing, review ngrok traffic, and rotate `SUBSTACK_SESSION_TOKEN` if the URL was shared or unexpected traffic appears. Use `AUTH_MODE=oauth` for a durable public deployment, or `AUTH_MODE=static_bearer` for private clients that can set an `Authorization` header.
+
+The automated bounded-window alternative remains available:
 
 ```bash
-npm run build
-npm run smoke:ngrok-noauth
-npm run smoke:ngrok-noauth -- --evidence-artifact .data/v1/gate-11-chatgpt-ngrok.md
-npm run mcp:preflight -- --require-live
-npm run smoke:ngrok-noauth -- --use-local-credentials --hold-open-seconds 900 --evidence-artifact .data/v1/gate-11-chatgpt-ngrok.md
+npm run smoke:ngrok-noauth -- --use-local-credentials --hold-open-seconds 900
 ```
 
-The command launches `node dist/http.js` in `AUTH_MODE=noauth`, starts `ngrok http 8787`, discovers the HTTPS forwarding URL from the local ngrok API, checks remote `/healthz`, lists the exact V1 draft-only tools, and calls the read-only validation and preview tools with the rich fixture. The ordinary smoke does not call Substack or run write tools. For the manual ChatGPT create-draft flow, first require the local credential preflight, then explicitly add `--use-local-credentials` and a bounded `--hold-open-seconds <0-3600>` window. The command prints the live HTTPS `/mcp` endpoint before waiting and shuts the server and tunnel down when the window ends or you press Ctrl-C. Because this exposes a noauth endpoint backed by your local Substack credentials, keep the URL private, use the shortest practical window, review traffic, and record the rotation decision.
-
-If you manage the tunnel yourself instead, register the HTTPS forwarding URL ending in `/mcp`, for example:
-
-```text
-https://<subdomain>.ngrok.app/mcp
-```
-
-Then smoke-test the public noauth URL from this machine:
-
-```bash
-npm run smoke:remote-noauth -- --url https://<subdomain>.ngrok.app/mcp
-npm run smoke:remote-noauth -- --url https://<subdomain>.ngrok.app/mcp --evidence-artifact .data/v1/gate-11-chatgpt-ngrok.md
-```
-
-The remote noauth URL must use HTTPS, must use `/mcp` or `/mcp/<secret>`, and must not include embedded usernames/passwords.
-
-Both noauth smoke paths send no `Authorization` header. Add `--evidence-artifact .data/v1/gate-11-chatgpt-ngrok.md` to write a sanitized Markdown artifact with the remote smoke result, the remaining ChatGPT connector manual checklist, and structured fields for connector URL, ChatGPT surface, tool-list result, manual flow result, draft or review reference, tunnel exposure window, unexpected-traffic review, and rotation decision.
-
-Use read-only tools first, then `preview_draft`, then `create_draft` only with the matching confirmation token. Rotate `SUBSTACK_SESSION_TOKEN` after testing if the tunnel URL was shared or logs show unexpected access.
+That helper uses a temporary ngrok URL unless you supply ngrok domain arguments. The full guide covers stable-domain startup, client refresh behavior, local Claude configuration, and troubleshooting.
 
 ## Cloud Run
 
@@ -554,7 +624,7 @@ Important variables:
 - `OAUTH_JWT_ALGORITHMS`: optional comma-separated asymmetric JWT signing algorithms; defaults to `RS256,ES256`. Symmetric `HS*` algorithms and `none` are rejected.
 - `OAUTH_RESOURCE_DOCUMENTATION_URL`: optional documentation URL included in OAuth protected-resource metadata. Embedded URL usernames/passwords are rejected.
 - `MAX_BODY_BYTES`: max accepted body size for Markdown text, serialized `blocks_v1` input, and requested `get_draft` body output.
-- `MAX_IMAGE_BYTES`: max accepted image payload size before upload.
+- `MAX_IMAGE_BYTES`: max accepted downloaded/decoded source size and final normalized PNG size before upload.
 - `SUBSTACK_REQUEST_TIMEOUT_MS`: positive timeout in milliseconds for outbound Substack API requests, including response body reads, and remote image fetches. Defaults to `30000`.
 - `PREVIEW_TOKEN_SECRET`: HMAC secret for confirmation tokens. `auth:setup` generates it locally. Production startup rejects the built-in development default.
 - `CONFIRMATION_TOKEN_TTL_SECONDS`: positive confirmation token lifetime in seconds.
@@ -569,7 +639,7 @@ The validation and preview MCP tools do not call Substack. `list_drafts`, `get_d
 
 ```bash
 npm run dev:http
-npm run dev:stdio
+MCP_TRANSPORT=stdio npm run dev:stdio
 npm run cloud-run:logs:verify -- --logs-json .data/cloud-run-logs.json
 npm run cloud-run:plan -- --project-id <id> --publication-url <url> --user-id <id>
 npm run cloud-run:verify -- --service-json .data/cloud-run-service.json --auth-mode <mode> --publication-url <url> --user-id <id> --max-body-bytes 750000 --max-image-bytes 8000000 --substack-request-timeout-ms 30000 --confirmation-token-ttl-seconds 900 --evidence-artifact .data/v1/gate-12-cloud-run-deployment.md
@@ -611,7 +681,7 @@ npm run v1:status -- --fixture-dir fixtures/live
 npm run v1:status -- --evidence-file .data/v1-acceptance-evidence.json
 npm run validate:v1-local
 npm run start:http
-npm run start:stdio
+MCP_TRANSPORT=stdio npm run start:stdio
 npm run format:check
 npm run lint
 npm run typecheck
@@ -632,6 +702,7 @@ The two `mcp:preflight` entries above are the verified focused local credential 
 - `tests/` contains Vitest tests.
 - `fixtures/` contains deterministic Markdown fixtures.
 - `fixtures/substack/` is reserved for live draft-body fixtures from non-sensitive Substack test drafts.
+- `docs/` contains the client setup and stable-endpoint guide.
 - `examples/` contains MCP client configuration templates.
 - `AGENTS.md` contains shared coding-agent instructions.
 
@@ -651,7 +722,7 @@ See `SECURITY.md` for the auth boundary and `scripts/rotateLocalSecrets.md` for 
 - ChatGPT shows no tools: check that the URL ends in `/mcp`, the server is running, the ngrok tunnel is active, the client sends `Accept: application/json, text/event-stream`, CORS preflight allows `authorization` and `mcp-protocol-version`, and auth failures expose `WWW-Authenticate`.
 - Substack returns 401 or 403: refresh `SUBSTACK_SESSION_TOKEN`, prefer the canonical `*.substack.com` publication origin, and keep the browser-like `SUBSTACK_USER_AGENT`.
 - Draft formatting is wrong: capture a live draft with `npm run inspect:draft -- <draft_id>` and update the adapter fixture tests.
-- Image upload fails: check MIME type, `MAX_IMAGE_BYTES`, `SUBSTACK_REQUEST_TIMEOUT_MS`, remote public URL reachability, private-network URL rejection, and Substack auth.
+- Image upload fails: inspect the returned error `code` and `stage`; then check source validity, `MAX_IMAGE_BYTES`, `SUBSTACK_REQUEST_TIMEOUT_MS`, remote public URL/DNS reachability, SVG safety restrictions, and Substack auth.
 
 ## ScaffoldGuard
 

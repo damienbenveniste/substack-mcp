@@ -150,6 +150,40 @@ console.log("draft");
     ]);
   });
 
+  it("parses latex-tagged fences as LaTeX while preserving other code fences", () => {
+    const result = parseMarkdown(`\`\`\`latex
+\\int_0^1 x^2\\,dx = \\frac{1}{3}
+\`\`\`
+
+\`\`\`typescript
+const draftOnly = true;
+\`\`\`
+
+\`\`\`
+plain code
+\`\`\`
+`);
+
+    expect(result.warnings).toEqual([]);
+    expect(result.unsupportedFeatures).toEqual([]);
+    expect(result.blocks).toEqual([
+      {
+        type: "latex_block",
+        latex: "\\int_0^1 x^2\\,dx = \\frac{1}{3}",
+      },
+      {
+        type: "code_block",
+        language: "typescript",
+        code: "const draftOnly = true;",
+      },
+      {
+        type: "code_block",
+        language: undefined,
+        code: "plain code",
+      },
+    ]);
+  });
+
   it("parses explicit image and LaTeX directives", () => {
     const result = parseMarkdown(`:::image
 src: https://example.com/directive.png

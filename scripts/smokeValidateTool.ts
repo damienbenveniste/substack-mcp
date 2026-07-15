@@ -41,8 +41,7 @@ export interface PreviewSmokeResult {
 
 const RICH_FIXTURE_PATH = "fixtures/markdown/full-rich-draft.md";
 const PREVIEW_TITLE = "[MCP SMOKE] Rich Draft Preview";
-const LATEX_FIXTURE_WARNING =
-  "LaTeX block mapping is provisional until a live Substack LaTeX fixture is captured; preview uses a latex code block fallback.";
+const TABLE_FIXTURE_WARNING = "Markdown tables are not supported in V1.";
 
 export async function assertValidateNewsletterContentTool(
   client: ToolCaller,
@@ -80,9 +79,9 @@ export async function assertValidateNewsletterContentTool(
   assertNumber(stats.code_blocks, 1, "stats.code_blocks");
   assertNumber(stats.latex_blocks, 1, "stats.latex_blocks");
   assertNumber(stats.links, 1, "stats.links");
-  if (!warnings.includes(LATEX_FIXTURE_WARNING)) {
+  if (!warnings.includes(TABLE_FIXTURE_WARNING)) {
     throw new Error(
-      "validate_newsletter_content did not return the LaTeX fixture warning.",
+      "validate_newsletter_content did not return the table fixture warning.",
     );
   }
   if (JSON.stringify(unsupportedFeatures) !== JSON.stringify(["table"])) {
@@ -179,8 +178,8 @@ export async function assertPreviewDraftTool(
   assertNumber(stats.code_blocks, 1, "stats.code_blocks", "preview_draft");
   assertNumber(stats.latex_blocks, 1, "stats.latex_blocks", "preview_draft");
 
-  if (!warnings.includes(LATEX_FIXTURE_WARNING)) {
-    throw new Error("preview_draft did not return the LaTeX fixture warning.");
+  if (!warnings.includes(TABLE_FIXTURE_WARNING)) {
+    throw new Error("preview_draft did not return the table fixture warning.");
   }
 
   const tokenParts = confirmationToken.split(".").length;

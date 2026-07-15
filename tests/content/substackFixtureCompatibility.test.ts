@@ -1,7 +1,10 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { resolveProjectFixtureDir } from "../../scripts/fixtureStatusCore.js";
+import {
+  normalizeSubstackNativeNodeIds,
+  resolveProjectFixtureDir,
+} from "../../scripts/fixtureStatusCore.js";
 import type { ImageBlock } from "../../src/content/newsletterBlocks.js";
 import {
   type SubstackPmDoc,
@@ -48,7 +51,9 @@ describe("Substack live fixture compatibility", () => {
       },
     ]);
 
-    expect(result.doc).toEqual(codeBlockFixture.readDoc());
+    expect(normalizeSubstackNativeNodeIds(result.doc)).toEqual(
+      normalizeSubstackNativeNodeIds(codeBlockFixture.readDoc()),
+    );
   });
 
   const imageIt = imageFixture.exists ? it : it.skip;
@@ -69,7 +74,9 @@ describe("Substack live fixture compatibility", () => {
       },
     ]);
 
-    expect(result.doc).toEqual(latexFixture.readDoc());
+    expect(normalizeSubstackNativeNodeIds(result.doc)).toEqual(
+      normalizeSubstackNativeNodeIds(latexFixture.readDoc()),
+    );
   });
 });
 
