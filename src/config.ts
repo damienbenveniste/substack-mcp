@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { isAbsolute, resolve } from "node:path";
 import { type DotenvConfigOptions, config as loadDotenv } from "dotenv";
 
 import { normalizeMcpPathSecret } from "./safety/mcpPathSecret.js";
@@ -24,6 +25,7 @@ export interface AppConfig {
   readonly previewTokenSecret: string;
   readonly maxBodyBytes: number;
   readonly maxImageBytes: number;
+  readonly imageFileRoots: readonly string[];
   readonly substackRequestTimeoutMs: number;
   readonly confirmationTokenTtlSeconds: number;
   readonly authMode: AuthMode;
@@ -88,6 +90,10 @@ export function loadConfig(
       env.MAX_IMAGE_BYTES,
       8_000_000,
       "MAX_IMAGE_BYTES",
+    ),
+    imageFileRoots: parseAbsolutePathList(
+      env.IMAGE_FILE_ROOTS,
+      "IMAGE_FILE_ROOTS",
     ),
     substackRequestTimeoutMs: parsePositiveInteger(
       env.SUBSTACK_REQUEST_TIMEOUT_MS,
@@ -227,6 +233,27 @@ function normalizeUrl(value: string | undefined): string | undefined {
 function optionalString(value: string | undefined): string | undefined {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
+}
+
+function parseAbsolutePathList(
+  value: string | undefined,
+  name: string,
+): readonly string[] {
+  const entries = value
+    ?.split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+  if (!entries || entries.length === 0) {
+    return [];
+  }
+
+  for (const entry of entries) {
+    if (!isAbsolute(entry)) {
+      throw new Error(`${name} entries must be absolute paths.`);
+    }
+  }
+
+  return Array.from(new Set(entries.map((entry) => resolve(entry))));
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

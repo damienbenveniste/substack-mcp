@@ -7,7 +7,12 @@ import {
   type SubstackClient,
 } from "../substack/index.js";
 import type { SubstackDraft } from "../substack/types.js";
+import { selectDraftBody } from "./draftBody.js";
 import { toSafeDraftUrl } from "./draftUrl.js";
+import {
+  inspectNativeDraftBody,
+  type NativeDraftImage,
+} from "./nativeDraftImagePatch.js";
 import { summarizeSubstackToolError } from "./substackToolErrors.js";
 
 export const GetDraftInputSchema = z
@@ -42,6 +47,9 @@ export interface DraftToolDraft {
   readonly published_at?: string | null | undefined;
   readonly is_published?: boolean | undefined;
   readonly body?: unknown;
+  readonly body_format?: "substack_native_v1" | "opaque" | undefined;
+  readonly body_sha256?: string | undefined;
+  readonly images?: readonly NativeDraftImage[] | undefined;
 }
 
 interface GetDraftOptions {
@@ -83,7 +91,7 @@ export async function getDraft(
     return {
       ok: true,
       errors: [],
-      draft: toDraftToolDraft(draft, includeBody),
+      draft: toDraftToolDraft(draft, includeBody, config.maxBodyBytes),
       include_body: includeBody,
     };
   } catch (error) {
@@ -109,8 +117,13 @@ export function summarizeDraft(result: GetDraftOutput): string {
 function toDraftToolDraft(
   draft: SubstackDraft,
   includeBody: boolean,
+  maxBodyBytes: number,
 ): DraftToolDraft {
-  const body = draft.body ?? draft.draft_body;
+  const body = selectDraftBody(draft);
+  const nativeInspection =
+    includeBody && body !== undefined
+      ? inspectNativeDraftBody(body, maxBodyBytes)
+      : undefined;
 
   return {
     id: draft.id,
@@ -128,6 +141,18 @@ function toDraftToolDraft(
     published_at: draft.published_at,
     is_published: draft.is_published,
     ...(includeBody && body !== undefined ? { body } : {}),
+    ...(nativeInspection
+      ? nativeInspection.ok
+        ? {
+            body_format: "substack_native_v1" as const,
+            body_sha256: nativeInspection.body_hash,
+            images: nativeInspection.images,
+          }
+        : {
+            body_format: "opaque" as const,
+            images: [],
+          }
+      : {}),
   };
 }
 
@@ -140,7 +165,7 @@ function validateIncludedDraftBodyBytes(
     return undefined;
   }
 
-  const body = draft.body ?? draft.draft_body;
+  const body = selectDraftBody(draft);
   if (body === undefined) {
     return undefined;
   }

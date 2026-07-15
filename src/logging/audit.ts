@@ -25,11 +25,18 @@ export interface AuditEvent {
   readonly outcome: AuditOutcome;
   readonly reason?: AuditReason | undefined;
   readonly draft_id?: number | undefined;
-  readonly body_format?: "markdown_v1" | "blocks_v1" | undefined;
+  readonly body_format?:
+    | "markdown_v1"
+    | "blocks_v1"
+    | "native_image_patch_v1"
+    | undefined;
   readonly image_source?:
+    | "file"
     | "remote_url"
     | "base64"
     | "data_uri"
+    | "svg"
+    | "card"
     | "none"
     | "ambiguous"
     | undefined;

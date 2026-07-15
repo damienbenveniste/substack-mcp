@@ -18,7 +18,7 @@ Required private values:
 - `PREVIEW_TOKEN_SECRET`: random HMAC secret for write confirmation tokens.
 - `MCP_BEARER_TOKEN`: random bearer token when `AUTH_MODE=static_bearer`. Store only the token value, not an `Authorization:` header or `Bearer ...` prefix.
 - `MCP_PUBLIC_BASE_URL`: public HTTPS origin used in OAuth protected-resource metadata.
-- `OAUTH_AUTHORIZATION_SERVER_URL`: OAuth/OIDC issuer URL used for ChatGPT linking.
+- `OAUTH_AUTHORIZATION_SERVER_URL`: OAuth/OIDC issuer URL used for remote MCP client linking.
 - `OAUTH_JWKS_URL`: JWKS endpoint used to verify JWT access-token signatures.
 
 OAuth metadata URLs must be absolute `https://` URLs without embedded usernames/passwords. Startup and preflight reject credentialed OAuth URLs so credentials cannot leak through protected-resource metadata, authorization-server metadata, documentation links, or JWKS fetching. Remote OAuth smoke tests also reject credentialed `authorization_servers` returned by protected-resource metadata.
@@ -33,8 +33,8 @@ Cookie-authenticated Substack API requests and remote image fetches use a bounde
 
 ## Auth Modes
 
-- `AUTH_MODE=noauth`: local development, MCP Inspector, short-lived ngrok or personal ChatGPT testing only. The server logs a startup warning in this mode.
-- `AUTH_MODE=static_bearer`: private remote HTTP clients that can send `Authorization: Bearer ...`, such as Claude Code or Cursor.
+- `AUTH_MODE=noauth`: local development, MCP Inspector, or short-lived personal tunnel testing only. The server logs a startup warning in this mode.
+- `AUTH_MODE=static_bearer`: private remote HTTP clients that can send `Authorization: Bearer ...` headers.
 - `AUTH_MODE=oauth`: verifies JWT bearer tokens through the configured JWKS endpoint, issuer, audience/resource, expiration, and recognized MCP scopes. Tool calls require the per-tool scope advertised in MCP metadata.
 
 Outside production, the HTTP server binds to `127.0.0.1` by default. In production it binds to `0.0.0.0` by default for Cloud Run; override `HOST` only when the deployment environment requires a different bind address.
@@ -51,7 +51,19 @@ Tool errors returned to MCP clients scrub cookies, bearer tokens, env-style secr
 
 ## Remote Image Fetching
 
-`upload_image` may fetch a caller-provided remote image URL before uploading it to Substack. The input URL must use `http://` or `https://`, must not include embedded usernames/passwords, must not point at `localhost` or private network address ranges, must not redirect, must complete within `SUBSTACK_REQUEST_TIMEOUT_MS`, must return a Substack-supported image MIME type, and must stay under `MAX_IMAGE_BYTES` by declared `Content-Length` and actual bytes. The uploaded URL returned by Substack is also validated as public `http(s)` before it is returned to MCP clients.
+`upload_image` treats file references, URL, base64/data-URI, SVG, and card sources as untrusted input. Every accepted source is decoded, dimension-checked, auto-oriented, converted to sRGB PNG, checked against `MAX_IMAGE_BYTES`, reopened, and compared with source metadata before upload. Source dimensions are preserved by default; explicit bounds can resize with a structured warning, while unexpected aspect-ratio and color-to-monochrome changes fail before upload unless explicitly allowed. SVG input is parsed and rejected if it contains scripts, event handlers, external references, foreign content, entities, processing instructions, or unsafe CSS.
+
+Local `image_file` paths must be absolute and are disabled unless `IMAGE_FILE_ROOTS` contains an allowed directory. The resolver canonicalizes both the root and requested path, requires a regular file, checks real-path containment to block traversal and symlink escapes, and reads only the exact requested file. It never searches by filename, selects a neighboring file, or substitutes another artifact. Connector file references must provide a safe downloadable URL or an allowlisted mounted path; opaque references fail closed. Optional source checksums are verified before normalization.
+
+Remote input URLs must use `http://` or `https://`, must not include embedded usernames/passwords, must not identify localhost or private network ranges, and must resolve only to public addresses before a request is attempted. Redirects are rejected. Fetches must complete within `SUBSTACK_REQUEST_TIMEOUT_MS`, return a supported image MIME type, and stay under `MAX_IMAGE_BYTES` by both declared `Content-Length` and streamed bytes. The uploaded URL returned by Substack is also validated as public `http(s)` before it reaches MCP clients.
+
+The DNS check occurs before the HTTP connection but does not pin the verified address to the connection made by the runtime fetch implementation. Production deployments should also enforce outbound network policy that blocks private, loopback, link-local, and metadata-service ranges to defend against DNS rebinding and time-of-check/time-of-use changes. Do not configure broad filesystem roots for a network-exposed server; prefer short-lived connector download URLs and leave `IMAGE_FILE_ROOTS` empty.
+
+## Targeted Native Image Updates
+
+`preview_draft.image_patch` and `update_draft.image_patch` refetch the current unpublished draft, parse its bounded native JSON body, and replace exactly one selected `image2` node. A confirmation token binds the resulting complete `draft_body`; the update refetch rejects the token when the draft changed after preview. Unknown and non-target JSON is preserved, and caption mutation never falls back to inserting an ordinary paragraph.
+
+The unofficial Substack API has not been verified to support an `If-Match` header, ETag, or another atomic conditional update. There is therefore a residual race between the final update-side read and PUT. Keep this private workflow low-concurrency, review the returned draft immediately, and do not edit the same draft concurrently while applying an image patch.
 
 ## Rotation
 

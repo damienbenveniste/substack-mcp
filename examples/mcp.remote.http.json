@@ -2,7 +2,7 @@
   "mcpServers": {
     "substack-drafts": {
       "type": "streamable-http",
-      "url": "https://your-cloud-run-url/mcp",
+      "url": "https://your-mcp-host/mcp",
       "headers": {
         "Authorization": "Bearer <mcp-bearer-token>"
       }

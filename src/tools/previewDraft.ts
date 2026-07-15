@@ -3,12 +3,25 @@ import { z } from "zod";
 import type { AppConfig } from "../config.js";
 import { createConfirmationToken } from "../safety/confirmationToken.js";
 import {
+  createSubstackClient,
+  type SubstackClient,
+} from "../substack/index.js";
+import { selectDraftBody } from "./draftBody.js";
+import {
   AudienceSchema,
   buildDraftPayload,
   type DraftAudience,
   type DraftPayload,
   type DraftPayloadStats,
+  type DraftPreviewImage,
 } from "./draftPayload.js";
+import { isEditableUnpublishedDraft } from "./draftStatus.js";
+import {
+  applyNativeDraftImagePatch,
+  NativeDraftImagePatchSchema,
+  type NativeDraftImagePatchSummary,
+} from "./nativeDraftImagePatch.js";
+import { summarizeSubstackToolError } from "./substackToolErrors.js";
 
 export const PreviewDraftInputSchema = z
   .object({
@@ -20,11 +33,16 @@ export const PreviewDraftInputSchema = z
     body_format: z.enum(["markdown_v1", "blocks_v1"]).optional(),
     body_markdown: z.string().optional(),
     blocks: z.unknown().optional(),
+    image_patch: NativeDraftImagePatchSchema.optional().describe(
+      "Targeted native image replacement. The server fetches and patches the current draft body; do not provide or reconstruct the full body.",
+    ),
     include_payload_debug: z.boolean().optional(),
   })
   .strict();
 
 export type PreviewDraftInput = z.infer<typeof PreviewDraftInputSchema>;
+export type StandardPreviewDraftInput = PreviewDraftInput;
+export type PreviewDraftImagePatchInput = PreviewDraftInput;
 export type PreviewDraftStats = DraftPayloadStats;
 
 export interface PreviewDraftOutput {
@@ -38,9 +56,11 @@ export interface PreviewDraftOutput {
   readonly preview_text: string;
   readonly warnings: readonly string[];
   readonly stats: PreviewDraftStats;
+  readonly images: readonly DraftPreviewImage[];
   readonly confirmation_token?: string | undefined;
   readonly confirmation_expires_at?: string | undefined;
   readonly payload_debug?: PreviewPayloadDebug | undefined;
+  readonly image_patch?: NativeDraftImagePatchSummary | undefined;
 }
 
 interface PreviewPayloadDebug {
@@ -55,7 +75,7 @@ interface PreviewPayloadDebug {
 }
 
 export function previewDraft(
-  input: PreviewDraftInput,
+  input: StandardPreviewDraftInput,
   config: Pick<
     AppConfig,
     "confirmationTokenTtlSeconds" | "maxBodyBytes" | "previewTokenSecret"
@@ -90,6 +110,7 @@ export function previewDraft(
     preview_text: built.preview_text,
     warnings: Array.from(warnings),
     stats: built.stats,
+    images: built.images,
   };
 
   if (errors.length > 0) {
@@ -128,6 +149,101 @@ export function previewDraft(
       ? buildPayloadDebug(built.payload)
       : undefined,
   };
+}
+
+interface PreviewDraftImagePatchOptions {
+  readonly client?: Pick<SubstackClient, "getDraft"> | undefined;
+  readonly now?: Date | undefined;
+}
+
+export async function previewDraftImagePatch(
+  input: PreviewDraftImagePatchInput,
+  config: Pick<
+    AppConfig,
+    | "confirmationTokenTtlSeconds"
+    | "maxBodyBytes"
+    | "previewTokenSecret"
+    | "publicationUrl"
+    | "sessionToken"
+    | "substackRequestTimeoutMs"
+    | "userAgent"
+    | "userId"
+  >,
+  options: PreviewDraftImagePatchOptions = {},
+): Promise<PreviewDraftOutput> {
+  if (
+    input.action !== "update" ||
+    input.draft_id === undefined ||
+    input.image_patch === undefined
+  ) {
+    return imagePatchPreviewFailure(input.draft_id ?? 0, [
+      "A targeted image patch requires action=update, draft_id, and image_patch.",
+    ]);
+  }
+  const conflictingFields = imagePatchConflictingFields(input);
+  if (conflictingFields.length > 0) {
+    return imagePatchPreviewFailure(
+      input.draft_id,
+      conflictingFields.map(
+        (field) => `${field} must not be provided with image_patch.`,
+      ),
+    );
+  }
+
+  try {
+    const client = options.client ?? createSubstackClient(config);
+    const existing = await client.getDraft(input.draft_id);
+    if (!isEditableUnpublishedDraft(existing)) {
+      return imagePatchPreviewFailure(input.draft_id, [
+        "Refusing to preview an image patch for a draft that Substack does not report as unpublished.",
+      ]);
+    }
+
+    const patched = applyNativeDraftImagePatch(
+      selectDraftBody(existing),
+      input.image_patch,
+      config.maxBodyBytes,
+    );
+    if (!patched.ok) {
+      return imagePatchPreviewFailure(input.draft_id, patched.errors);
+    }
+
+    const payload: DraftPayload = { draft_body: patched.serialized_body };
+    const confirmation = createConfirmationToken(
+      {
+        action: "update",
+        draft_id: input.draft_id,
+        content: payload,
+      },
+      {
+        secret: config.previewTokenSecret,
+        ttlSeconds: config.confirmationTokenTtlSeconds,
+        now: options.now,
+      },
+    );
+
+    return {
+      ok: true,
+      errors: [],
+      action: "update",
+      draft_id: input.draft_id,
+      title: existing.title,
+      preview_text: patched.preview_text,
+      warnings: patched.warnings,
+      stats: patched.stats,
+      images: patched.images,
+      image_patch: patched.summary,
+      confirmation_token: confirmation.token,
+      confirmation_expires_at: confirmation.expiresAt.toISOString(),
+      payload_debug: input.include_payload_debug
+        ? buildPayloadDebug(payload)
+        : undefined,
+    };
+  } catch (error) {
+    return imagePatchPreviewFailure(input.draft_id, [
+      summarizeSubstackToolError(error),
+    ]);
+  }
 }
 
 export function summarizePreview(result: PreviewDraftOutput): string {
@@ -182,4 +298,39 @@ function parseDraftBodyDoc(draftBody: string): {
       topLevelNodes: 0,
     };
   }
+}
+
+function imagePatchPreviewFailure(
+  draftId: number,
+  errors: readonly string[],
+): PreviewDraftOutput {
+  return {
+    ok: false,
+    errors,
+    action: "update",
+    draft_id: draftId,
+    preview_text: "",
+    warnings: [],
+    stats: {
+      blocks: 0,
+      words: 0,
+      images: 0,
+      code_blocks: 0,
+      latex_blocks: 0,
+    },
+    images: [],
+  };
+}
+
+function imagePatchConflictingFields(
+  input: PreviewDraftInput,
+): readonly string[] {
+  return [
+    "title",
+    "subtitle",
+    "audience",
+    "body_format",
+    "body_markdown",
+    "blocks",
+  ].filter((field) => input[field as keyof PreviewDraftInput] !== undefined);
 }

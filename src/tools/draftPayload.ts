@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { AppConfig } from "../config.js";
+import type { NewsletterBlock } from "../content/newsletterBlocks.js";
 import { parseNewsletterContent } from "../content/parseNewsletterContent.js";
 import { toPreviewText } from "../content/toPreviewText.js";
 import {
@@ -45,11 +46,22 @@ export interface DraftPayloadStats {
   readonly latex_blocks: number;
 }
 
+export interface DraftPreviewImage {
+  readonly url: string;
+  readonly width?: number | undefined;
+  readonly height?: number | undefined;
+  readonly format?: string | undefined;
+  readonly alt_text?: string | undefined;
+  readonly caption?: string | undefined;
+  readonly title?: string | undefined;
+}
+
 export interface BuildDraftPayloadOutput {
   readonly ok: boolean;
   readonly errors: readonly string[];
   readonly warnings: readonly string[];
   readonly stats: DraftPayloadStats;
+  readonly images: readonly DraftPreviewImage[];
   readonly preview_text: string;
   readonly audience?: DraftAudience | undefined;
   readonly payload?: DraftPayload | undefined;
@@ -104,6 +116,7 @@ export function buildDraftPayload(
     errors: parsed.errors,
     warnings: Array.from(warnings),
     stats,
+    images: collectPreviewImages(parsed.blocks),
     preview_text: toPreviewText(parsed.blocks),
     audience: resolveAudience(input),
   };
@@ -168,10 +181,63 @@ function buildMetadataOnlyPayload(
     errors,
     warnings: [],
     stats: EMPTY_STATS,
+    images: [],
     preview_text: metadataPreviewText(input, audience),
     audience,
     payload: ok ? toDraftPayload(input, audience, undefined) : undefined,
   };
+}
+
+function collectPreviewImages(
+  blocks: readonly NewsletterBlock[],
+): readonly DraftPreviewImage[] {
+  return blocks.flatMap((block): readonly DraftPreviewImage[] => {
+    switch (block.type) {
+      case "image": {
+        const format = inferImageFormat(block.src);
+        return [
+          {
+            url: block.src,
+            ...(block.width !== undefined ? { width: block.width } : {}),
+            ...(block.height !== undefined ? { height: block.height } : {}),
+            ...(format !== undefined ? { format } : {}),
+            ...(block.alt !== undefined ? { alt_text: block.alt } : {}),
+            ...(block.caption !== undefined ? { caption: block.caption } : {}),
+            ...(block.title !== undefined ? { title: block.title } : {}),
+          },
+        ];
+      }
+      case "blockquote":
+        return collectPreviewImages(block.children);
+      case "bulleted_list":
+      case "ordered_list":
+        return block.items.flatMap((item) =>
+          collectPreviewImages(item.children),
+        );
+      default:
+        return [];
+    }
+  });
+}
+
+function inferImageFormat(src: string): string | undefined {
+  try {
+    const extension = new URL(src).pathname.match(/\.([a-z0-9]+)$/iu)?.[1];
+    if (!extension) {
+      return undefined;
+    }
+
+    const normalized = extension.toLowerCase();
+    if (normalized === "jpg") {
+      return "jpeg";
+    }
+
+    return ["avif", "gif", "jpeg", "png", "svg", "webp"].includes(normalized)
+      ? normalized
+      : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function metadataPreviewText(

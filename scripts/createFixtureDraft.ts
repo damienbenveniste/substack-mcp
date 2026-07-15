@@ -23,7 +23,7 @@ const DEFAULT_FIXTURE_PATH = "fixtures/markdown/full-rich-draft.md";
 const DEFAULT_SUBTITLE =
   "Created by scripts/createFixtureDraft.ts for live fixture discovery.";
 const TEST_IMAGE_DATA_URI =
-  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADElEQVR42mP8z8BQDwAFgwJ/lJ2n4QAAAABJRU5ErkJggg==";
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAADCAYAAAC09K7GAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAEklEQVQImWP4oBGwHxkzEBQAAJVxGdV+F71hAAAAAElFTkSuQmCC";
 const MARKDOWN_IMAGE_URL_PATTERN =
   /(!\[[^\]]*]\()([^) "\t]+)((?:\s+"[^"]*")?\))/;
 const IMAGE_DIRECTIVE_SRC_PATTERN = /^(\s*src:\s*)(\S+)(\s*)$/m;

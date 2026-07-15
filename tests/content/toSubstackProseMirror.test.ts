@@ -4,6 +4,9 @@ import { toPreviewText } from "../../src/content/toPreviewText.js";
 import { toSubstackProseMirror } from "../../src/content/toSubstackProseMirror.js";
 import type { NewsletterBlock } from "../../src/index.js";
 
+const nativeNodeIdPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
 describe("toSubstackProseMirror", () => {
   it("maps paragraphs and inline marks to ProseMirror nodes", () => {
     const result = toSubstackProseMirror([
@@ -116,7 +119,7 @@ describe("toSubstackProseMirror", () => {
     ]);
   });
 
-  it("maps provisional code, image, latex, and embed blocks with warnings", () => {
+  it("maps native code, LaTeX, and image captions alongside provisional image and embed blocks", () => {
     const result = toSubstackProseMirror([
       {
         type: "code_block",
@@ -136,10 +139,13 @@ describe("toSubstackProseMirror", () => {
       { type: "embed_url", url: "https://example.com/video" },
     ]);
 
-    expect(result.warnings).toHaveLength(4);
+    expect(result.warnings).toHaveLength(2);
     expect(result.doc.content[0]).toEqual({
-      type: "code_block",
-      attrs: { lang: "typescript" },
+      type: "highlighted_code_block",
+      attrs: {
+        language: "typescript",
+        nodeId: expect.stringMatching(nativeNodeIdPattern),
+      },
       content: [{ type: "text", text: "console.log('draft');" }],
     });
     expect(result.doc.content[1]).toEqual({
@@ -158,18 +164,20 @@ describe("toSubstackProseMirror", () => {
             height: 480,
           },
         },
+        {
+          type: "caption",
+          content: [{ type: "text", text: "Caption" }],
+        },
       ],
     });
     expect(result.doc.content[2]).toEqual({
-      type: "paragraph",
-      content: [{ type: "text", text: "Caption" }],
+      type: "latex_block",
+      attrs: {
+        persistentExpression: "E = mc^2",
+        id: expect.stringMatching(nativeNodeIdPattern),
+      },
     });
     expect(result.doc.content[3]).toEqual({
-      type: "code_block",
-      attrs: { lang: "latex" },
-      content: [{ type: "text", text: "E = mc^2" }],
-    });
-    expect(result.doc.content[4]).toEqual({
       type: "paragraph",
       content: [
         {
@@ -181,6 +189,56 @@ describe("toSubstackProseMirror", () => {
         },
       ],
     });
+    expect(result.warnings).not.toContain(
+      expect.stringContaining("following paragraph fallback"),
+    );
+  });
+
+  it("omits ordered-list attrs when the list uses the default start", () => {
+    expect(
+      toSubstackProseMirror([
+        {
+          type: "ordered_list",
+          items: [
+            {
+              children: [{ type: "paragraph", children: [{ text: "First" }] }],
+            },
+          ],
+        },
+      ]).doc.content[0],
+    ).toEqual({
+      type: "ordered_list",
+      content: [
+        {
+          type: "list_item",
+          content: [
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "First" }],
+            },
+          ],
+        },
+      ],
+    });
+  });
+
+  it("generates stable and distinct native block IDs", () => {
+    const blocks: readonly NewsletterBlock[] = [
+      { type: "code_block", code: "print('hello')" },
+      { type: "code_block", code: "print('hello')" },
+      { type: "latex_block", latex: "E = mc^2" },
+    ];
+
+    const first = toSubstackProseMirror(blocks).doc;
+    const second = toSubstackProseMirror(blocks).doc;
+    const firstCodeId = first.content[0]?.attrs?.nodeId;
+    const secondCodeId = first.content[1]?.attrs?.nodeId;
+
+    expect(first).toEqual(second);
+    expect(first.content[0]?.attrs).toMatchObject({ language: "plaintext" });
+    expect(firstCodeId).toEqual(expect.stringMatching(nativeNodeIdPattern));
+    expect(secondCodeId).toEqual(expect.stringMatching(nativeNodeIdPattern));
+    expect(firstCodeId).not.toBe(secondCodeId);
   });
 
   it("uses an empty paragraph for empty list items", () => {

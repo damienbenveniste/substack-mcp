@@ -98,14 +98,14 @@ function rootChildToBlocks(
       return [listToBlock(child, state, directives)];
     case "thematicBreak":
       return [{ type: "horizontal_rule" }];
-    case "code":
-      return [
-        {
-          type: "code_block",
-          language: normalizeCodeLanguage(child.lang ?? undefined),
-          code: child.value,
-        },
-      ];
+    case "code": {
+      const language = normalizeCodeLanguage(child.lang ?? undefined);
+      if (language === "latex") {
+        return [{ type: "latex_block", latex: child.value }];
+      }
+
+      return [{ type: "code_block", language, code: child.value }];
+    }
     case "html":
       addUnsupported(state, "raw_html", "Raw HTML is not supported in V1.");
       return [];

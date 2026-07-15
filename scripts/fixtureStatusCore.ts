@@ -459,16 +459,60 @@ function fixtureCompatibilityError(
   doc: SubstackPmDoc,
 ): string | undefined {
   const converted = toSubstackProseMirror(sampleBlocksForFixture(kind, doc));
-  if (isDeepStrictEqual(converted.doc, doc)) {
+  const normalizedAdapter = normalizeSubstackNativeNodeIds(converted.doc);
+  const normalizedCaptured = normalizeSubstackNativeNodeIds(doc);
+  if (isDeepStrictEqual(normalizedAdapter, normalizedCaptured)) {
     return undefined;
   }
 
   return [
     `${kind} fixture is valid, but adapter output does not match the captured draft_body.`,
-    `First difference: ${firstStructuralDifference(converted.doc, doc)}.`,
+    `First difference: ${firstStructuralDifference(normalizedAdapter, normalizedCaptured)}.`,
     `Adapter summary: ${formatDocSummary(summarizeDoc(converted.doc))}.`,
     `Captured summary: ${formatDocSummary(summarizeDoc(doc))}.`,
   ].join(" ");
+}
+
+export function normalizeSubstackNativeNodeIds(
+  doc: SubstackPmDoc,
+): SubstackPmDoc {
+  return {
+    type: "doc",
+    content: doc.content.map(normalizeSubstackNativeNodeId),
+  };
+}
+
+function normalizeSubstackNativeNodeId(node: SubstackPmNode): SubstackPmNode {
+  const attrs = normalizeSubstackNativeNodeAttrs(node);
+
+  return {
+    ...node,
+    ...(attrs ? { attrs } : {}),
+    ...(node.content
+      ? { content: node.content.map(normalizeSubstackNativeNodeId) }
+      : {}),
+  };
+}
+
+function normalizeSubstackNativeNodeAttrs(
+  node: SubstackPmNode,
+): Readonly<Record<string, unknown>> | undefined {
+  if (!node.attrs) {
+    return undefined;
+  }
+
+  if (
+    node.type === "highlighted_code_block" &&
+    typeof node.attrs.nodeId === "string"
+  ) {
+    return { ...node.attrs, nodeId: "<native-node-id>" };
+  }
+
+  if (node.type === "latex_block" && typeof node.attrs.id === "string") {
+    return { ...node.attrs, id: "<native-node-id>" };
+  }
+
+  return node.attrs;
 }
 
 function sampleBlocksForFixture(

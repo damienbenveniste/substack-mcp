@@ -15,6 +15,7 @@ const config: AppConfig = {
   previewTokenSecret: "test-preview-secret-with-enough-entropy",
   maxBodyBytes: 750_000,
   maxImageBytes: 8_000_000,
+  imageFileRoots: [],
   substackRequestTimeoutMs: 30_000,
   confirmationTokenTtlSeconds: 900,
   authMode: "noauth",
@@ -45,8 +46,11 @@ const expectedAnnotations = {
 
 const draftWriteSafetyStatement =
   "This tool creates or modifies a Substack draft only. It never publishes, schedules, deletes, emails, or creates public Notes. The user must review and publish manually inside Substack.";
+const validPngDataUri =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAADCAYAAAC09K7GAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAEklEQVQImWP4oBGwHxkzEBQAAJVxGdV+F71hAAAAAElFTkSuQmCC";
 const forbiddenToolNamePattern =
   /(?:^|_)(?:publish|publishing|schedule|scheduled|delete|deleted|note|notes)(?:_|$)/iu;
+const clientBrandPattern = /\b(?:ChatGPT|Claude|OpenAI)\b/iu;
 
 describe("createMcpServer", () => {
   it("exposes only the V1 draft tools with client-visible annotations", async () => {
@@ -72,14 +76,23 @@ describe("createMcpServer", () => {
         const tool = toolsByName.get(name);
         expect(tool, `Expected ${name} to be registered`).toBeDefined();
         expect(tool?.annotations).toEqual(annotations);
+        expect(tool?.description).not.toMatch(clientBrandPattern);
+        expect(JSON.stringify(tool?.inputSchema)).not.toMatch(
+          clientBrandPattern,
+        );
         expect(tool?.description).toContain("never publishes");
         expect(tool?.description).toContain("schedules");
         expect(tool?.description).toContain("deletes");
         expect(tool?.description).toContain("emails");
         expect(tool?.description).toContain("Notes");
-        expect(tool?._meta).toEqual({
-          securitySchemes: [{ type: "noauth" }],
-        });
+        expect(tool?._meta).toEqual(
+          name === "upload_image"
+            ? {
+                securitySchemes: [{ type: "noauth" }],
+                "openai/fileParams": ["image_file"],
+              }
+            : { securitySchemes: [{ type: "noauth" }] },
+        );
       }
 
       expect(toolsByName.get("create_draft")?.description).toContain(
@@ -94,6 +107,39 @@ describe("createMcpServer", () => {
       expect(toolsByName.get("upload_image")?.description).toContain(
         "The user must review and publish manually inside Substack.",
       );
+      expect(toolsByName.get("upload_image")?.description).toContain(
+        "Use the exact image artifact",
+      );
+      expect(
+        toolsByName.get("upload_image")?.inputSchema.properties,
+      ).toHaveProperty("image_file");
+      expect(toolsByName.get("preview_draft")?.description).toContain(
+        "preview_draft previews insertion only",
+      );
+      expect(
+        JSON.stringify(toolsByName.get("preview_draft")?.inputSchema),
+      ).toContain('"image_patch"');
+      expect(
+        JSON.stringify(toolsByName.get("preview_draft")?.inputSchema),
+      ).toContain('"replacement_image_url"');
+      expect(
+        JSON.stringify(toolsByName.get("preview_draft")?.inputSchema),
+      ).toContain('"image_index"');
+      expect(
+        JSON.stringify(toolsByName.get("preview_draft")?.inputSchema),
+      ).toContain('"match_image_url"');
+      expect(toolsByName.get("create_draft")?.description).toContain(
+        "create_draft performs the draft write",
+      );
+      expect(toolsByName.get("update_draft")?.description).toContain(
+        "targeted replacement authorized with preview_draft.image_patch",
+      );
+      expect(
+        JSON.stringify(toolsByName.get("update_draft")?.inputSchema),
+      ).toContain('"image_patch"');
+      expect(
+        JSON.stringify(toolsByName.get("update_draft")?.inputSchema),
+      ).toContain('"replacement_image_url"');
 
       expect(toolsByName.has("publish_post")).toBe(false);
       expect(toolsByName.has("schedule_post")).toBe(false);
@@ -133,6 +179,7 @@ describe("createMcpServer", () => {
       });
       expect(toolsByName.get("upload_image")?._meta).toEqual({
         securitySchemes: [{ type: "oauth2", scopes: ["images:write"] }],
+        "openai/fileParams": ["image_file"],
       });
     } finally {
       await closeConnectedClient(client, server);
@@ -361,6 +408,9 @@ describe("createMcpServer", () => {
         name: "preview_draft",
         arguments: createArgs,
       });
+      expect(createPreview).toMatchObject({
+        structuredContent: { images: [] },
+      });
       const createToken = readStructuredString(
         createPreview,
         "confirmation_token",
@@ -551,7 +601,7 @@ describe("createMcpServer", () => {
       const uploaded = await client.callTool({
         name: "upload_image",
         arguments: {
-          image_base64: "data:image/png;base64,aGk=",
+          image_base64: validPngDataUri,
           alt_text: "MCP alt text",
           caption: "MCP caption",
         },
@@ -562,13 +612,73 @@ describe("createMcpServer", () => {
         structuredContent: {
           ok: true,
           image_url: "https://substackcdn.com/mcp-upload.png",
+          filename: expect.stringMatching(/\.png$/u),
+          format: "png",
+          width: 4,
+          height: 3,
+          size_bytes: expect.any(Number),
+          sha256: expect.stringMatching(/^[0-9a-f]{64}$/u),
+          source_type: "base64",
+          source: {
+            source_type: "base64",
+            format: "png",
+            width: 4,
+            height: 3,
+            sha256: expect.stringMatching(/^[0-9a-f]{64}$/u),
+          },
+          processed: {
+            format: "png",
+            width: 4,
+            height: 3,
+            sha256: expect.stringMatching(/^[0-9a-f]{64}$/u),
+          },
+          preview_url: "https://substackcdn.com/mcp-upload.png",
           alt_text: "MCP alt text",
           caption: "MCP caption",
+          warnings: expect.any(Array),
+          warning_details: expect.any(Array),
           message:
             "Uploaded image to Substack: https://substackcdn.com/mcp-upload.png",
         },
       });
-      expect(uploadedDataUris).toEqual(["data:image/png;base64,aGk="]);
+      expect(uploadedDataUris).toHaveLength(1);
+      expect(uploadedDataUris[0]).toMatch(/^data:image\/png;base64,/u);
+
+      const imagePreview = await client.callTool({
+        name: "preview_draft",
+        arguments: {
+          action: "create",
+          title: "Uploaded image preview",
+          body_format: "blocks_v1",
+          blocks: [
+            {
+              type: "image",
+              src: "https://substackcdn.com/mcp-upload.png",
+              width: 4,
+              height: 3,
+              alt: "MCP alt text",
+              caption: "MCP caption",
+              title: "MCP image title",
+            },
+          ],
+        },
+      });
+      expect(imagePreview).toMatchObject({
+        isError: false,
+        structuredContent: {
+          images: [
+            {
+              url: "https://substackcdn.com/mcp-upload.png",
+              width: 4,
+              height: 3,
+              format: "png",
+              alt_text: "MCP alt text",
+              caption: "MCP caption",
+              title: "MCP image title",
+            },
+          ],
+        },
+      });
     } finally {
       await closeConnectedClient(client, server);
     }

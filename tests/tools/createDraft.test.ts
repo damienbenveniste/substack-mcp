@@ -365,7 +365,7 @@ describe("createDraft", () => {
     expect(result.errors).toContain("SUBSTACK_USER_ID is required.");
   });
 
-  it("returns idempotency and conversion warnings", async () => {
+  it("returns the idempotency warning without an obsolete LaTeX warning", async () => {
     const idempotencyStore = createCreateDraftIdempotencyStore();
     const result = await createDraft(
       {
@@ -398,9 +398,7 @@ describe("createDraft", () => {
     expect(result.warnings).toContain(
       "idempotency_key is remembered in memory for the preview-token TTL only; it is not durable across restarts or deployments.",
     );
-    expect(result.warnings).toContain(
-      "LaTeX block mapping is provisional until a live Substack LaTeX fixture is captured; preview uses a latex code block fallback.",
-    );
+    expect(result.warnings).toHaveLength(1);
   });
 
   it("replays successful creates with the same idempotency key and draft input", async () => {

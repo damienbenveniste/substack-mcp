@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   previewDraft,
+  previewDraftImagePatch,
   summarizePreview,
 } from "../../src/tools/previewDraft.js";
 
@@ -12,8 +13,229 @@ const config = {
 };
 
 const now = new Date("2026-07-08T12:00:00.000Z");
+const nativePatchConfig = {
+  ...config,
+  publicationUrl: undefined,
+  sessionToken: undefined,
+  substackRequestTimeoutMs: 30_000,
+  userAgent: "test-agent",
+  userId: 123,
+};
 
 describe("previewDraft", () => {
+  it("previews one targeted native image replacement without reconstructing the body", async () => {
+    const nativeBody = JSON.stringify({
+      type: "doc",
+      attrs: { unknownDocumentMetadata: "preserve-me" },
+      content: [
+        { type: "latex_block", attrs: { persistentExpression: "x^2" } },
+        {
+          type: "captionedImage",
+          attrs: { alignment: "center" },
+          content: [
+            {
+              type: "image2",
+              attrs: {
+                src: "https://cdn.example.com/old.png",
+                alt: "Existing alt",
+                title: "Existing title",
+                customImageState: { keep: true },
+              },
+            },
+            {
+              type: "caption",
+              content: [{ type: "text", text: "Existing caption" }],
+            },
+          ],
+        },
+      ],
+    });
+
+    const result = await previewDraftImagePatch(
+      {
+        action: "update",
+        draft_id: 77,
+        image_patch: {
+          match_image_url: "https://cdn.example.com/old.png",
+          replacement_image_url: "https://cdn.example.com/new.png",
+        },
+        include_payload_debug: true,
+      },
+      nativePatchConfig,
+      {
+        now,
+        client: {
+          getDraft: async (draftId) => ({
+            id: draftId,
+            title: "Native draft",
+            draft_body: nativeBody,
+            status: "draft",
+            raw: {},
+          }),
+        },
+      },
+    );
+
+    expect(result).toMatchObject({
+      ok: true,
+      action: "update",
+      draft_id: 77,
+      title: "Native draft",
+      stats: { images: 1, latex_blocks: 1 },
+      images: [
+        {
+          native_index: 1,
+          url: "https://cdn.example.com/new.png",
+          alt_text: "Existing alt",
+          title: "Existing title",
+          caption: "Existing caption",
+        },
+      ],
+      image_patch: {
+        image_index: 1,
+        previous_image_url: "https://cdn.example.com/old.png",
+        replacement_image_url: "https://cdn.example.com/new.png",
+        preserved_non_target_content: true,
+      },
+      payload_debug: {
+        draft_body_doc_type: "doc",
+        top_level_nodes: 2,
+      },
+    });
+    expect(result.confirmation_token).toContain(".");
+    expect(result.warnings).toContain(
+      "Targeted native image patch preserves every non-target draft_body JSON field.",
+    );
+  });
+
+  it("validates targeted image preview requirements and conflicting fields", async () => {
+    const missing = await previewDraftImagePatch(
+      { action: "create" },
+      nativePatchConfig,
+    );
+    expect(missing).toMatchObject({
+      ok: false,
+      draft_id: 0,
+      errors: [
+        "A targeted image patch requires action=update, draft_id, and image_patch.",
+      ],
+    });
+
+    const conflicting = await previewDraftImagePatch(
+      {
+        action: "update",
+        draft_id: 77,
+        title: "Do not combine",
+        image_patch: {
+          image_index: 1,
+          replacement_image_url: "https://cdn.example.com/new.png",
+        },
+      },
+      nativePatchConfig,
+    );
+    expect(conflicting.errors).toContain(
+      "title must not be provided with image_patch.",
+    );
+  });
+
+  it("rejects non-drafts and native patch validation failures", async () => {
+    const input = {
+      action: "update" as const,
+      draft_id: 77,
+      image_patch: {
+        image_index: 1,
+        replacement_image_url: "https://cdn.example.com/new.png",
+      },
+    };
+    const published = await previewDraftImagePatch(input, nativePatchConfig, {
+      client: {
+        getDraft: async (draftId) => ({
+          id: draftId,
+          is_published: true,
+          raw: {},
+        }),
+      },
+    });
+    expect(published.errors).toContain(
+      "Refusing to preview an image patch for a draft that Substack does not report as unpublished.",
+    );
+
+    const missingImage = await previewDraftImagePatch(
+      input,
+      nativePatchConfig,
+      {
+        client: {
+          getDraft: async (draftId) => ({
+            id: draftId,
+            status: "draft",
+            draft_body: JSON.stringify({ type: "doc", content: [] }),
+            raw: {},
+          }),
+        },
+      },
+    );
+    expect(missingImage.errors).toContain(
+      "image_index 1 does not identify an existing native image.",
+    );
+  });
+
+  it("summarizes targeted preview client failures", async () => {
+    const result = await previewDraftImagePatch(
+      {
+        action: "update",
+        draft_id: 77,
+        image_patch: {
+          image_index: 1,
+          replacement_image_url: "https://cdn.example.com/new.png",
+        },
+      },
+      nativePatchConfig,
+      {
+        client: {
+          getDraft: async () => {
+            throw new Error("request failed");
+          },
+        },
+      },
+    );
+    expect(result.ok).toBe(false);
+    expect(result.errors).toHaveLength(1);
+  });
+
+  it("omits payload debug from targeted previews unless requested", async () => {
+    const result = await previewDraftImagePatch(
+      {
+        action: "update",
+        draft_id: 77,
+        image_patch: {
+          image_index: 1,
+          replacement_image_url: "https://cdn.example.com/new.png",
+        },
+      },
+      nativePatchConfig,
+      {
+        client: {
+          getDraft: async (draftId) => ({
+            id: draftId,
+            status: "draft",
+            draft_body: JSON.stringify({
+              type: "doc",
+              content: [
+                {
+                  type: "image2",
+                  attrs: { src: "https://cdn.example.com/old.png" },
+                },
+              ],
+            }),
+            raw: {},
+          }),
+        },
+      },
+    );
+    expect(result.ok).toBe(true);
+    expect(result.payload_debug).toBeUndefined();
+  });
+
   it("returns a confirmation token and minimized payload debug for valid content", () => {
     const result = previewDraft(
       {
@@ -43,9 +265,8 @@ describe("previewDraft", () => {
       top_level_nodes: 3,
     });
     expect(result.payload_debug).not.toHaveProperty("draft_body");
-    expect(result.warnings).toContain(
-      "LaTeX block mapping is provisional until a live Substack LaTeX fixture is captured; preview uses a latex code block fallback.",
-    );
+    expect(result.images).toEqual([]);
+    expect(result.warnings).toEqual([]);
     expect(summarizePreview(result)).toContain(
       "Draft preview ready for create",
     );
@@ -98,6 +319,7 @@ describe("previewDraft", () => {
       code_blocks: 0,
       latex_blocks: 0,
     });
+    expect(result.images).toEqual([]);
     expect(result.payload_debug).toEqual({
       payload_type: "omitted",
       audience: "only_paid",
@@ -108,6 +330,64 @@ describe("previewDraft", () => {
       has_audience: true,
       top_level_nodes: 0,
     });
+  });
+
+  it("returns a recursive manifest of exact preview images and metadata", () => {
+    const result = previewDraft(
+      {
+        action: "create",
+        title: "Nested images",
+        body_format: "blocks_v1",
+        blocks: [
+          {
+            type: "blockquote",
+            children: [
+              {
+                type: "image",
+                src: "https://cdn.example.com/art/diagram.PNG?version=2",
+                width: 1672,
+                height: 941,
+                alt: "Architecture diagram",
+                caption: "Reference architecture.",
+                title: "Platform architecture",
+              },
+            ],
+          },
+          {
+            type: "ordered_list",
+            items: [
+              {
+                children: [
+                  {
+                    type: "image",
+                    src: "https://cdn.example.com/photo.jpg",
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      config,
+      now,
+    );
+
+    expect(result.ok).toBe(true);
+    expect(result.images).toEqual([
+      {
+        url: "https://cdn.example.com/art/diagram.PNG?version=2",
+        width: 1672,
+        height: 941,
+        format: "png",
+        alt_text: "Architecture diagram",
+        caption: "Reference architecture.",
+        title: "Platform architecture",
+      },
+      {
+        url: "https://cdn.example.com/photo.jpg",
+        format: "jpeg",
+      },
+    ]);
   });
 
   it("requires body content for create previews and rejects no-op update previews", () => {

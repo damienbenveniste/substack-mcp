@@ -1,8 +1,10 @@
 # LaTeX Discovery
 
-Status: pending live Substack fixture capture.
+Status: native editor schema mapped; pending live fixture capture and rendering verification.
 
-The current adapter maps `latex_block` to a `code_block` with `lang: "latex"` and returns a warning. This is a development fallback only. It does not satisfy V1's native LaTeX acceptance criterion.
+The current adapter maps `latex_block` to Substack's native `latex_block` node with `persistentExpression` and `id` attributes. The shape was identified from the current authenticated editor schema. It no longer uses a code-block fallback, but it does not satisfy V1's live acceptance criterion until a captured fixture round-trips and the equation renders correctly in the editor and preview.
+
+Markdown input can create this native block with a `latex` fenced block, a `$$` display-math block, or an explicit `:::latex` directive. Fences with any other language, or no language, remain native code blocks.
 
 Required discovery flow:
 
@@ -21,8 +23,8 @@ Required discovery flow:
    npm run inspect:draft -- <draft_id> --fixture latex-block
    ```
 
-6. Inspect the parsed `draft_body` JSON.
-7. Update `toSubstackProseMirror.ts` so `LatexBlock` emits the observed native node shape.
-8. Add a fixture-based regression test.
+6. Confirm the parsed `draft_body` uses the expected native `latex_block` shape.
+7. Run `npm run fixtures:status -- --require-all` and the fixture compatibility test.
+8. Adjust `toSubstackProseMirror.ts` only if the captured shape differs from the observed editor schema.
 
 Do not mark V1 complete until a created draft renders a native Substack equation block in the editor and preview.

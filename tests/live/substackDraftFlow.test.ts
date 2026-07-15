@@ -57,7 +57,7 @@ describeLive("live Substack draft flow", () => {
           name: "upload_image",
           arguments: {
             image_base64:
-              "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADElEQVR42mP8z8BQDwAFgwJ/lJ2n4QAAAABJRU5ErkJggg==",
+              "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAADCAYAAAC09K7GAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAEklEQVQImWP4oBGwHxkzEBQAAJVxGdV+F71hAAAAAElFTkSuQmCC",
             alt_text: "One pixel test image",
             caption: "Live MCP test image",
             filename_hint: "mcp-test.png",

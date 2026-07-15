@@ -1,6 +1,16 @@
 import { z } from "zod";
 
 import type { AppConfig } from "../config.js";
+import {
+  defaultImageDnsLookup,
+  type ImageAssetMetadata,
+  type ImageDnsLookup,
+  type ImageProcessingErrorCode,
+  type ImageProcessingIssue,
+  type ImageProcessingStage,
+  type ImageProcessingWarning,
+  prepareImage,
+} from "../images/prepareImage.js";
 import { type AuditLogger, writeAuditEvent } from "../logging/audit.js";
 import { parseHttpUrl } from "../safety/urlPolicy.js";
 import {
@@ -10,47 +20,163 @@ import {
 import type { FetchLike } from "../substack/types.js";
 import { summarizeSubstackToolError } from "./substackToolErrors.js";
 
-const ALLOWED_IMAGE_MIME_TYPES = new Set([
-  "image/avif",
-  "image/gif",
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-]);
+const ImageCardInputSchema = z
+  .object({
+    width: z.number().int().positive().max(6000),
+    height: z.number().int().positive().max(6000),
+    title: z.string().min(1).max(500),
+    subtitle: z.string().max(500).optional(),
+    footer: z.string().max(500).optional(),
+    background: z.string().optional(),
+    foreground: z.string().optional(),
+  })
+  .strict();
 
-const EXTENSION_TO_MIME_TYPE: Readonly<Record<string, string>> = {
-  avif: "image/avif",
-  gif: "image/gif",
-  jpg: "image/jpeg",
-  jpeg: "image/jpeg",
-  png: "image/png",
-  webp: "image/webp",
-};
+const ImageFileReferenceSchema = z
+  .object({
+    file_id: z.string().min(1).optional(),
+    artifact_id: z.string().min(1).optional(),
+    download_url: z.string().url().optional(),
+    path: z.string().min(1).optional(),
+    name: z.string().min(1).optional(),
+    mime_type: z.string().min(1).optional(),
+    size: z.number().int().nonnegative().optional(),
+    expected_sha256: z
+      .string()
+      .regex(/^[0-9a-f]{64}$/iu)
+      .optional(),
+  })
+  .strict();
+
+const ImageFileItemSchema = z.union([
+  z.string().min(1),
+  ImageFileReferenceSchema,
+]);
 
 export const UploadImageInputSchema = z
   .object({
-    image_url: z.string().optional(),
-    image_base64: z.string().optional(),
-    alt_text: z.string().optional(),
-    caption: z.string().optional(),
-    filename_hint: z.string().optional(),
+    source_type: z
+      .enum(["file", "url", "base64", "svg", "card"])
+      .optional()
+      .describe(
+        "The one source field to use. Never infer or substitute another source.",
+      ),
+    image_file: z
+      .union([ImageFileItemSchema, z.array(ImageFileItemSchema).length(1)])
+      .optional()
+      .describe(
+        "The exact generated or uploaded image artifact. File-capable MCP clients may bind this field as a file parameter; complete references require download_url, while local paths must be allowlisted by IMAGE_FILE_ROOTS.",
+      ),
+    image_url: z
+      .string()
+      .optional()
+      .describe(
+        "An exact public remote image URL, used only when no image_file artifact is available.",
+      ),
+    image_base64: z
+      .string()
+      .optional()
+      .describe(
+        "Base64 image bytes, used only when neither image_file nor image_url is available.",
+      ),
+    svg: z
+      .string()
+      .optional()
+      .describe(
+        "Raw SVG source, used only when the user explicitly requested this exact SVG; never generate it as a fallback for an unavailable image artifact.",
+      ),
+    card: ImageCardInputSchema.optional().describe(
+      "Server-rendered card source, used only when the user explicitly requested a card; never substitute it for an unavailable image artifact.",
+    ),
+    output_format: z.literal("png").optional(),
+    max_width: z.number().int().positive().max(6000).optional(),
+    max_height: z.number().int().positive().max(6000).optional(),
+    alt_text: z
+      .string()
+      .optional()
+      .describe(
+        "Accessibility text preserved for later draft insertion; it is not a visible caption.",
+      ),
+    caption: z
+      .string()
+      .optional()
+      .describe(
+        "Visible caption preserved for later draft insertion; upload_image itself does not modify a draft.",
+      ),
+    filename_hint: z
+      .string()
+      .optional()
+      .describe(
+        "Output filename hint only. It never selects or searches for a source file.",
+      ),
+    preserve_dimensions: z.boolean().optional(),
+    allow_resize: z
+      .boolean()
+      .optional()
+      .describe("Set false to fail instead of resizing an oversized source."),
+    allow_color_mode_change: z
+      .boolean()
+      .optional()
+      .describe(
+        "Set true only when a color-to-monochrome conversion is intentional.",
+      ),
+    require_visual_fidelity: z
+      .boolean()
+      .optional()
+      .describe(
+        "Defaults to true and rejects unexpected aspect-ratio changes.",
+      ),
   })
   .strict();
 
 export type UploadImageInput = z.infer<typeof UploadImageInputSchema>;
 
+export interface UploadImageError {
+  readonly code: ImageProcessingErrorCode | "SUBSTACK_UPLOAD_FAILED";
+  readonly message: string;
+  readonly stage: ImageProcessingStage | "upload";
+}
+
 export interface UploadImageOutput {
   readonly ok: boolean;
   readonly errors: readonly string[];
+  readonly error?: UploadImageError | undefined;
   readonly image_url?: string | undefined;
+  readonly filename?: string | undefined;
+  readonly format?: "png" | undefined;
+  readonly width?: number | undefined;
+  readonly height?: number | undefined;
+  readonly size_bytes?: number | undefined;
+  readonly sha256?: string | undefined;
+  readonly source_type?: "file" | "url" | "base64" | "svg" | "card" | undefined;
+  readonly source_artifact_id?: string | undefined;
+  readonly source?: UploadImageAssetMetadata | undefined;
+  readonly processed?: UploadImageAssetMetadata | undefined;
+  readonly preview_url?: string | undefined;
   readonly alt_text?: string | undefined;
   readonly caption?: string | undefined;
+  readonly warnings: readonly string[];
+  readonly warning_details: readonly ImageProcessingWarning[];
   readonly message: string;
+}
+
+export interface UploadImageAssetMetadata {
+  readonly source_type?: "file" | "url" | "base64" | "svg" | "card" | undefined;
+  readonly filename: string;
+  readonly format: string;
+  readonly mime_type: string;
+  readonly width: number;
+  readonly height: number;
+  readonly color_mode: string;
+  readonly size_bytes: number;
+  readonly sha256: string;
+  readonly artifact_id?: string | undefined;
 }
 
 interface UploadImageOptions {
   readonly client?: Pick<SubstackClient, "uploadImage"> | undefined;
   readonly fetchFn?: FetchLike | undefined;
+  readonly dnsLookup?: ImageDnsLookup | undefined;
   readonly auditLogger?: AuditLogger | undefined;
 }
 
@@ -59,6 +185,7 @@ export async function uploadImage(
   config: Pick<
     AppConfig,
     | "maxImageBytes"
+    | "imageFileRoots"
     | "publicationUrl"
     | "sessionToken"
     | "substackRequestTimeoutMs"
@@ -67,64 +194,87 @@ export async function uploadImage(
   >,
   options: UploadImageOptions = {},
 ): Promise<UploadImageOutput> {
-  let dataUriResult: Awaited<ReturnType<typeof toDataUri>>;
-  try {
-    dataUriResult = await toDataUri(input, config, options.fetchFn);
-  } catch (error) {
+  const prepared = await prepareImage(input, config, {
+    fetchFn: options.fetchFn,
+    dnsLookup:
+      options.dnsLookup ??
+      (options.fetchFn === undefined ? defaultImageDnsLookup : undefined),
+  });
+  if (!prepared.ok) {
     auditUploadImage(options.auditLogger, input, {
       outcome: "failure",
-      reason: "image_prepare",
+      reason:
+        prepared.error.stage === "source" ||
+        prepared.error.stage === "download" ||
+        prepared.error.stage === "validation"
+          ? "validation"
+          : "image_prepare",
       errorCount: 1,
+      warningCount: 0,
     });
-    return failure([summarizeSubstackToolError(error)], input);
-  }
-
-  if (!dataUriResult.ok) {
-    auditUploadImage(options.auditLogger, input, {
-      outcome: "failure",
-      reason: "validation",
-      errorCount: dataUriResult.errors.length,
-    });
-    return failure(dataUriResult.errors, input);
+    return failure(prepared.error, input);
   }
 
   try {
     const client = options.client ?? createSubstackClient(config);
-    const uploaded = await client.uploadImage(dataUriResult.dataUri);
+    const uploaded = await client.uploadImage(prepared.image.dataUri);
     const uploadedUrlValidation = parseHttpUrl(
       uploaded.url,
       "uploaded image_url",
     );
     if (!uploadedUrlValidation.ok) {
+      const error = uploadFailure(
+        uploadedUrlValidation.errors[0] ??
+          "Substack returned an invalid image URL.",
+      );
       auditUploadImage(options.auditLogger, input, {
         outcome: "failure",
         reason: "substack_client",
-        errorCount: uploadedUrlValidation.errors.length,
+        errorCount: 1,
+        warningCount: prepared.image.warnings.length,
       });
-      return failure(uploadedUrlValidation.errors, input);
+      return failure(error, input, prepared.image.warnings);
     }
 
     auditUploadImage(options.auditLogger, input, {
       outcome: "success",
       errorCount: 0,
+      warningCount: prepared.image.warnings.length,
     });
 
     return {
       ok: true,
       errors: [],
       image_url: uploadedUrlValidation.url.toString(),
+      preview_url: uploadedUrlValidation.url.toString(),
+      filename: prepared.image.filename,
+      format: prepared.image.format,
+      width: prepared.image.width,
+      height: prepared.image.height,
+      size_bytes: prepared.image.sizeBytes,
+      sha256: prepared.image.sha256,
+      source_type: prepared.image.sourceType,
+      source_artifact_id: prepared.image.source.artifactId,
+      source: toOutputAssetMetadata(
+        prepared.image.source,
+        prepared.image.sourceType,
+      ),
+      processed: toOutputAssetMetadata(prepared.image.processed),
       alt_text: input.alt_text,
       caption: input.caption,
+      warnings: prepared.image.warnings.map(({ message }) => message),
+      warning_details: prepared.image.warnings,
       message: `Uploaded image to Substack: ${uploadedUrlValidation.url.toString()}`,
     };
   } catch (error) {
-    const summary = summarizeSubstackToolError(error);
+    const uploadError = uploadFailure(summarizeSubstackToolError(error));
     auditUploadImage(options.auditLogger, input, {
       outcome: "failure",
       reason: "substack_client",
       errorCount: 1,
+      warningCount: prepared.image.warnings.length,
     });
-    return failure([summary], input);
+    return failure(uploadError, input, prepared.image.warnings);
   }
 }
 
@@ -132,337 +282,51 @@ export function summarizeUploadImage(result: UploadImageOutput): string {
   if (!result.ok) {
     return `Image upload failed with ${result.errors.length} error(s).`;
   }
-
   return result.message;
 }
 
-async function toDataUri(
-  input: Pick<UploadImageInput, "filename_hint" | "image_base64" | "image_url">,
-  config: Pick<AppConfig, "maxImageBytes" | "substackRequestTimeoutMs">,
-  fetchFn: FetchLike | undefined,
-): Promise<
-  | { readonly ok: true; readonly dataUri: string }
-  | { readonly ok: false; readonly errors: readonly string[] }
-> {
-  if (Boolean(input.image_url) === Boolean(input.image_base64)) {
-    return {
-      ok: false,
-      errors: ["Exactly one of image_url or image_base64 is required."],
-    };
-  }
-
-  if (input.image_url) {
-    return fetchImageDataUri(input.image_url, config, fetchFn ?? fetch);
-  }
-
-  return base64ImageDataUri(
-    input.image_base64 ?? "",
-    input.filename_hint,
-    config,
-  );
-}
-
-async function fetchImageDataUri(
-  imageUrl: string,
-  config: Pick<AppConfig, "maxImageBytes" | "substackRequestTimeoutMs">,
-  fetchFn: FetchLike,
-): Promise<
-  | { readonly ok: true; readonly dataUri: string }
-  | { readonly ok: false; readonly errors: readonly string[] }
-> {
-  const parsed = parseHttpUrl(imageUrl, "image_url");
-  if (!parsed.ok) {
-    return parsed;
-  }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(
-    () => controller.abort(),
-    config.substackRequestTimeoutMs,
-  );
-  timeout.unref?.();
-
-  try {
-    const response = await fetchFn(parsed.url, {
-      redirect: "manual",
-      signal: controller.signal,
-    });
-    if (isRedirectStatus(response.status)) {
-      return {
-        ok: false,
-        errors: [
-          "Image fetch redirected; provide the final public image URL directly.",
-        ],
-      };
-    }
-
-    if (!response.ok) {
-      return {
-        ok: false,
-        errors: [`Image fetch failed with HTTP ${response.status}.`],
-      };
-    }
-
-    const mimeType = normalizeMimeType(response.headers.get("content-type"));
-    if (!isAllowedMimeType(mimeType)) {
-      return {
-        ok: false,
-        errors: [`Unsupported image MIME type: ${mimeType ?? "unknown"}.`],
-      };
-    }
-
-    const declaredBytes = parseContentLength(
-      response.headers.get("content-length"),
-    );
-    if (declaredBytes !== undefined) {
-      const sizeError = validateImageBytes(declaredBytes, config.maxImageBytes);
-      if (sizeError) {
-        return { ok: false, errors: [sizeError] };
-      }
-    }
-
-    const readResult = await readResponseBytes(response, config.maxImageBytes);
-    if (!readResult.ok) {
-      return readResult;
-    }
-
-    return {
-      ok: true,
-      dataUri: `data:${mimeType};base64,${readResult.bytes.toString("base64")}`,
-    };
-  } catch (error) {
-    if (controller.signal.aborted || isAbortError(error)) {
-      return {
-        ok: false,
-        errors: [
-          `Image fetch timed out after ${config.substackRequestTimeoutMs} ms.`,
-        ],
-      };
-    }
-    throw error;
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-async function readResponseBytes(
-  response: Response,
-  maxBytes: number,
-): Promise<
-  | { readonly ok: true; readonly bytes: Buffer }
-  | { readonly ok: false; readonly errors: readonly string[] }
-> {
-  const reader = response.body?.getReader();
-  if (!reader) {
-    const bytes = Buffer.from(await response.arrayBuffer());
-    const sizeError = validateImageBytes(bytes.byteLength, maxBytes);
-    return sizeError ? { ok: false, errors: [sizeError] } : { ok: true, bytes };
-  }
-
-  const chunks: Uint8Array[] = [];
-  let totalBytes = 0;
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        break;
-      }
-      if (!value) {
-        continue;
-      }
-
-      totalBytes += value.byteLength;
-      const sizeError = validateImageBytes(totalBytes, maxBytes);
-      if (sizeError) {
-        await reader.cancel();
-        return { ok: false, errors: [sizeError] };
-      }
-
-      chunks.push(value);
-    }
-  } finally {
-    reader.releaseLock();
-  }
-
-  return {
-    ok: true,
-    bytes: Buffer.concat(
-      chunks.map((chunk) => Buffer.from(chunk)),
-      totalBytes,
-    ),
-  };
-}
-
-function isRedirectStatus(status: number): boolean {
-  return status >= 300 && status < 400;
-}
-
-function isAbortError(error: unknown): boolean {
-  return error instanceof Error && error.name === "AbortError";
-}
-
-function base64ImageDataUri(
-  imageBase64: string,
-  filenameHint: string | undefined,
-  config: Pick<AppConfig, "maxImageBytes">,
-):
-  | { readonly ok: true; readonly dataUri: string }
-  | { readonly ok: false; readonly errors: readonly string[] } {
-  const filenameHintProblem = validateFilenameHint(filenameHint);
-  if (filenameHintProblem) {
-    return { ok: false, errors: [filenameHintProblem] };
-  }
-
-  const dataUri = parseDataUri(imageBase64);
-  const inferredMimeType = inferMimeType(filenameHint);
-  if (
-    !dataUri &&
-    filenameHint !== undefined &&
-    inferredMimeType === undefined
-  ) {
-    return {
-      ok: false,
-      errors: [
-        "filename_hint must end with a supported image extension: avif, gif, jpg, jpeg, png, or webp.",
-      ],
-    };
-  }
-
-  const mimeType = dataUri?.mimeType ?? inferredMimeType;
-  if (!isAllowedMimeType(mimeType)) {
-    return {
-      ok: false,
-      errors: [`Unsupported image MIME type: ${mimeType ?? "unknown"}.`],
-    };
-  }
-
-  const base64 = normalizeBase64(dataUri?.base64 ?? imageBase64);
-  if (!base64) {
-    return {
-      ok: false,
-      errors: ["image_base64 must be valid base64 data."],
-    };
-  }
-
-  const bytes = Buffer.from(base64, "base64");
-  const sizeError = validateImageBytes(bytes.byteLength, config.maxImageBytes);
-  if (sizeError) {
-    return { ok: false, errors: [sizeError] };
-  }
-
-  return {
-    ok: true,
-    dataUri: `data:${mimeType};base64,${base64}`,
-  };
-}
-
-function parseDataUri(
-  value: string,
-): { readonly mimeType: string; readonly base64: string } | undefined {
-  const match = /^data:([^;,]+);base64,(.+)$/is.exec(value.trim());
-  if (!match?.[1] || !match[2]) {
-    return undefined;
-  }
-
-  return {
-    mimeType: normalizeMimeType(match[1]) ?? match[1],
-    base64: match[2],
-  };
-}
-
-function normalizeBase64(value: string): string | undefined {
-  const compact = value.replace(/\s+/g, "");
-  if (
-    !compact ||
-    compact.length % 4 === 1 ||
-    !/^[A-Za-z0-9+/]*={0,2}$/.test(compact)
-  ) {
-    return undefined;
-  }
-
-  const normalized = compact.padEnd(
-    compact.length + ((4 - (compact.length % 4)) % 4),
-    "=",
-  );
-  const bytes = Buffer.from(normalized, "base64");
-  if (bytes.byteLength === 0 || bytes.toString("base64") !== normalized) {
-    return undefined;
-  }
-
-  return normalized;
-}
-
-function validateFilenameHint(value: string | undefined): string | undefined {
-  if (value === undefined) {
-    return undefined;
-  }
-
-  const trimmed = value.trim();
-  if (trimmed.length === 0) {
-    return "filename_hint must not be blank when provided.";
-  }
-
-  if (
-    trimmed.includes("\0") ||
-    trimmed.includes("/") ||
-    trimmed.includes("\\") ||
-    /^[A-Za-z]:/u.test(trimmed)
-  ) {
-    return "filename_hint must be a simple filename, not a path.";
-  }
-
-  if (trimmed.length > 255) {
-    return "filename_hint must be 255 characters or fewer.";
-  }
-
-  return /^[A-Za-z0-9._ -]+$/u.test(trimmed)
-    ? undefined
-    : "filename_hint must contain only letters, numbers, spaces, dots, dashes, and underscores.";
-}
-
-function inferMimeType(filenameHint: string | undefined): string | undefined {
-  const extension = filenameHint?.trim().toLowerCase().split(".").pop();
-  return extension ? EXTENSION_TO_MIME_TYPE[extension] : undefined;
-}
-
-function normalizeMimeType(value: string | null): string | undefined {
-  return value?.split(";")[0]?.trim().toLowerCase() || undefined;
-}
-
-function parseContentLength(value: string | null): number | undefined {
-  const normalized = value?.trim();
-  if (!normalized || !/^\d+$/u.test(normalized)) {
-    return undefined;
-  }
-
-  const parsed = Number.parseInt(normalized, 10);
-  return Number.isSafeInteger(parsed) ? parsed : undefined;
-}
-
-function isAllowedMimeType(mimeType: string | undefined): mimeType is string {
-  return mimeType !== undefined && ALLOWED_IMAGE_MIME_TYPES.has(mimeType);
-}
-
-function validateImageBytes(
-  bytes: number,
-  maxBytes: number,
-): string | undefined {
-  return bytes <= maxBytes
-    ? undefined
-    : `Image is ${bytes} byte(s), which exceeds MAX_IMAGE_BYTES=${maxBytes}.`;
-}
-
 function failure(
-  errors: readonly string[],
+  error: ImageProcessingIssue | UploadImageError,
   input: Pick<UploadImageInput, "alt_text" | "caption">,
+  warnings: readonly ImageProcessingWarning[] = [],
 ): UploadImageOutput {
   return {
     ok: false,
-    errors,
+    errors: [error.message],
+    error,
     alt_text: input.alt_text,
     caption: input.caption,
-    message: `Image upload failed with ${errors.length} error(s).`,
+    warnings: warnings.map(({ message }) => message),
+    warning_details: warnings,
+    message: "Image upload failed with 1 error(s).",
+  };
+}
+
+function toOutputAssetMetadata(
+  metadata: ImageAssetMetadata,
+  sourceType?: "file" | "url" | "base64" | "svg" | "card",
+): UploadImageAssetMetadata {
+  return {
+    ...(sourceType !== undefined ? { source_type: sourceType } : {}),
+    filename: metadata.filename,
+    format: metadata.format,
+    mime_type: metadata.mimeType,
+    width: metadata.width,
+    height: metadata.height,
+    color_mode: metadata.colorMode,
+    size_bytes: metadata.sizeBytes,
+    sha256: metadata.sha256,
+    ...(metadata.artifactId !== undefined
+      ? { artifact_id: metadata.artifactId }
+      : {}),
+  };
+}
+
+function uploadFailure(message: string): UploadImageError {
+  return {
+    code: "SUBSTACK_UPLOAD_FAILED",
+    message,
+    stage: "upload",
   };
 }
 
@@ -473,6 +337,7 @@ function auditUploadImage(
     readonly outcome: "success" | "failure";
     readonly reason?: "validation" | "substack_client" | "image_prepare";
     readonly errorCount: number;
+    readonly warningCount: number;
   },
 ): void {
   writeAuditEvent(auditLogger, {
@@ -482,25 +347,51 @@ function auditUploadImage(
     image_source: imageSource(input),
     alt_text_present: input.alt_text !== undefined,
     caption_present: input.caption !== undefined,
-    warning_count: 0,
+    warning_count: event.warningCount,
     error_count: event.errorCount,
   });
 }
 
 function imageSource(
-  input: Pick<UploadImageInput, "image_base64" | "image_url">,
-): "remote_url" | "base64" | "data_uri" | "none" | "ambiguous" {
-  if (input.image_url && input.image_base64) {
+  input: Pick<
+    UploadImageInput,
+    "card" | "image_base64" | "image_file" | "image_url" | "source_type" | "svg"
+  >,
+):
+  | "remote_url"
+  | "file"
+  | "base64"
+  | "data_uri"
+  | "svg"
+  | "card"
+  | "none"
+  | "ambiguous" {
+  const suppliedCount = [
+    input.image_file,
+    input.image_url,
+    input.image_base64,
+    input.svg,
+    input.card,
+  ].filter((value) => value !== undefined).length;
+  if (suppliedCount > 1) {
     return "ambiguous";
   }
-  if (input.image_url) {
+  if (input.source_type === "svg" || input.svg !== undefined) {
+    return "svg";
+  }
+  if (input.source_type === "card" || input.card !== undefined) {
+    return "card";
+  }
+  if (input.source_type === "file" || input.image_file !== undefined) {
+    return "file";
+  }
+  if (input.image_url !== undefined) {
     return "remote_url";
   }
-  if (input.image_base64) {
+  if (input.image_base64 !== undefined) {
     return input.image_base64.trim().startsWith("data:")
       ? "data_uri"
       : "base64";
   }
-
   return "none";
 }

@@ -23,6 +23,7 @@ describe("client setup examples", () => {
       "/absolute/path/to/substack-mcp/dist/stdio.js",
     ]);
     expect(server.env).toMatchObject({
+      MCP_TRANSPORT: "stdio",
       SUBSTACK_PUBLICATION_URL: "https://yourpublication.substack.com",
       SUBSTACK_SESSION_TOKEN: cursorEnv("SUBSTACK_SESSION_TOKEN"),
       SUBSTACK_USER_ID: cursorEnv("SUBSTACK_USER_ID"),
@@ -37,7 +38,7 @@ describe("client setup examples", () => {
     const serialized = JSON.stringify(server);
 
     expect(server.type).toBe("streamable-http");
-    expect(server.url).toBe("https://your-cloud-run-url/mcp");
+    expect(server.url).toBe("https://your-mcp-host/mcp");
     expect(server.headers).toEqual({
       Authorization: `Bearer ${cursorEnv("MCP_BEARER_TOKEN")}`,
     });
@@ -50,14 +51,14 @@ describe("client setup examples", () => {
     const serialized = JSON.stringify(server);
 
     expect(server.type).toBe("streamable-http");
-    expect(server.url).toBe("https://your-cloud-run-url/mcp");
+    expect(server.url).toBe("https://your-mcp-host/mcp");
     expect(server.headers).toEqual({
       Authorization: "Bearer <mcp-bearer-token>",
     });
     expectNoServerSideEnv(serialized);
   });
 
-  it("documents Claude Code local, static bearer, and OAuth setup without literal secrets", () => {
+  it("documents Claude Code local, static bearer, and OAuth setup without persisting server secrets", () => {
     const markdown = readTextExample("examples/claude-code.md");
     const remoteExamples = markdown.slice(
       markdown.indexOf("Remote HTTP with static bearer auth"),
@@ -65,12 +66,69 @@ describe("client setup examples", () => {
 
     expect(markdown).toContain("claude mcp add --transport stdio");
     expect(markdown).toContain("claude mcp add --transport http");
-    expect(markdown).toContain("claude mcp login substack-drafts");
-    expect(markdown).toContain("$SUBSTACK_SESSION_TOKEN");
+    expect(markdown).toContain('--env MCP_TRANSPORT="stdio"');
+    expect(markdown).toContain("npm run auth:setup");
+    expect(markdown).toContain("/bin/sh -c");
+    expect(markdown).toContain("run `/mcp`");
     expect(markdown).toContain("$MCP_BEARER_TOKEN");
     expect(remoteExamples).toContain("$MCP_BEARER_TOKEN");
     expectNoServerSideEnv(remoteExamples);
+    expect(markdown).not.toContain("$SUBSTACK_SESSION_TOKEN");
+    expect(markdown).not.toContain("$PREVIEW_TOKEN_SECRET");
+    expect(markdown).not.toContain("claude mcp login");
     expect(markdown).not.toMatch(/connect\.sid=|substack\.sid=|sk-[A-Za-z0-9]/);
+  });
+
+  it("keeps generic local stdio config secret-free and rooted in the repository", () => {
+    const example = readJsonExample("examples/mcp.local.stdio.json");
+    const server = getSubstackDraftsServer(example);
+    const serialized = JSON.stringify(server);
+
+    expect(server.command).toBe("/bin/sh");
+    expect(server.args).toEqual([
+      "-c",
+      "cd '/absolute/path/to/substack-mcp' && exec node dist/stdio.js",
+    ]);
+    expect(server.env).toEqual({
+      MCP_TRANSPORT: "stdio",
+      AUTH_MODE: "noauth",
+    });
+    expectNoServerSideEnv(serialized);
+  });
+
+  it("documents stable ngrok, ChatGPT, and Claude setup without private values", () => {
+    const guide = readTextExample("docs/CLIENT_SETUP.md");
+
+    for (const text of [
+      "ngrok config add-authtoken YOUR_NGROK_AUTHTOKEN",
+      "ngrok http --url YOUR_ASSIGNED_DOMAIN.ngrok-free.dev 8787",
+      "https://YOUR_ASSIGNED_DOMAIN.ngrok-free.dev/mcp",
+      "### ChatGPT remote",
+      "### Claude remote",
+      "### Claude Desktop local stdio",
+      "### Claude Code local stdio",
+      "### Claude Code remote HTTP",
+      "MCP_TRANSPORT=stdio",
+      "scan, refresh, reconnect, or remove-and-re-add",
+    ]) {
+      expect(guide).toContain(text);
+    }
+
+    for (const toolName of [
+      "create_draft",
+      "get_draft",
+      "list_drafts",
+      "preview_draft",
+      "update_draft",
+      "upload_image",
+      "validate_newsletter_content",
+    ]) {
+      expect(guide).toContain(`\`${toolName}\``);
+    }
+
+    expect(guide).not.toMatch(
+      /connect\.sid=|substack\.sid=|YOUR_NGROK_AUTHTOKEN=[^\s]+|sk-[A-Za-z0-9]/,
+    );
   });
 
   it("keeps the V1 acceptance evidence example parseable and secret-safe", () => {

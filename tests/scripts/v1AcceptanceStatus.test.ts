@@ -1086,8 +1086,11 @@ function writeAllFixtureDocs(fixtureDir: string): void {
       type: "doc",
       content: [
         {
-          type: "code_block",
-          attrs: { lang: "python" },
+          type: "highlighted_code_block",
+          attrs: {
+            language: "python",
+            nodeId: "captured-code-id",
+          },
           content: [{ type: "text", text: "print('hello')" }],
         },
       ],

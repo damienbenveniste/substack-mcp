@@ -89,9 +89,6 @@ export interface ContentStats {
   readonly links: number;
 }
 
-export const PROVISIONAL_LATEX_BLOCK_WARNING =
-  "LaTeX block mapping is provisional until a live Substack LaTeX fixture is captured; preview uses a latex code block fallback.";
-
 export function normalizeCodeLanguage(
   value: string | undefined,
 ): string | undefined {

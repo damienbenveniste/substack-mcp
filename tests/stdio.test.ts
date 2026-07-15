@@ -13,6 +13,7 @@ const baseConfig: AppConfig = {
   previewTokenSecret: "test-preview-secret-with-enough-entropy",
   maxBodyBytes: 750_000,
   maxImageBytes: 8_000_000,
+  imageFileRoots: [],
   substackRequestTimeoutMs: 30_000,
   confirmationTokenTtlSeconds: 900,
   authMode: "noauth",
