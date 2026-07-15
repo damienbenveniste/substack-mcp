@@ -1,7 +1,7 @@
 {
   "name": "substack-mcp",
   "version": "0.1.0",
-  "description": "Private MCP server for validating and drafting Substack newsletter posts.",
+  "description": "Draft-only MCP server for validating and managing Substack newsletter drafts.",
   "type": "module",
   "private": false,
   "main": "./dist/index.js",
@@ -15,6 +15,15 @@
   "engines": {
     "node": ">=20"
   },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/damienbenveniste/substack-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/damienbenveniste/substack-mcp/issues"
+  },
+  "homepage": "https://damienbenveniste.github.io/substack-mcp/",
   "files": [
     "dist"
   ],

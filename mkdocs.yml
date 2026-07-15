@@ -1,0 +1,54 @@
+site_name: Substack Draft MCP Server
+site_description: Draft-only MCP server for Substack newsletter workflows
+site_url: https://damienbenveniste.github.io/substack-mcp/
+repo_url: https://github.com/damienbenveniste/substack-mcp
+repo_name: damienbenveniste/substack-mcp
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.suggest
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: deep orange
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+
+nav:
+  - Home: index.md
+  - Client setup: CLIENT_SETUP.md
+  - Contributing: https://github.com/damienbenveniste/substack-mcp/blob/main/CONTRIBUTING.md
+  - Security: https://github.com/damienbenveniste/substack-mcp/security/policy
+
+copyright: Copyright 2026 Damien Benveniste

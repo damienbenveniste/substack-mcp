@@ -1,6 +1,10 @@
 # Substack Draft MCP Server
 
-Private MCP server for validating, previewing, creating, and updating Substack newsletter drafts through an MCP-compatible client.
+[![CI](https://github.com/damienbenveniste/substack-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/damienbenveniste/substack-mcp/actions/workflows/ci.yml)
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-0969da)](https://damienbenveniste.github.io/substack-mcp/)
+[![License](https://img.shields.io/github/license/damienbenveniste/substack-mcp)](LICENSE)
+
+Open-source, self-hosted MCP server for validating, previewing, creating, and updating Substack newsletter drafts through an MCP-compatible client.
 
 > This project uses Substack's unofficial/internal API. It may break if Substack changes its editor or endpoints. Keep credentials private. Use this for personal drafting workflows only unless you add proper OAuth and complete a security review.
 
@@ -16,7 +20,7 @@ This project is draft-only. V1 must not publish, schedule, delete, email, or cre
 - Accepts exact image artifacts, public image URLs, base64/data URIs, SVG, or generated cards and reports source and processed fingerprints.
 - Keeps Substack credentials server-side and redacts secrets and draft content from normal logs and client-visible errors.
 
-Start with [Quickstart](#quickstart), then follow the [client setup guide](docs/CLIENT_SETUP.md) for a stable ngrok URL, ChatGPT, Claude, Claude Desktop, or Claude Code.
+Start with [Quickstart](#quickstart), then follow the [client setup guide](docs/CLIENT_SETUP.md) for a stable ngrok URL, ChatGPT, Claude, Claude Desktop, or Claude Code. The published documentation is available on [GitHub Pages](https://damienbenveniste.github.io/substack-mcp/).
 
 ## Supported Formatting
 
@@ -733,3 +737,15 @@ scaffold-guard check
 scaffold-guard inspect-diff
 scaffold-guard validate
 ```
+
+## Contributing
+
+Contributions are welcome through fork-based pull requests. Read
+[CONTRIBUTING.md](CONTRIBUTING.md) before starting, and use the issue forms for
+bugs and feature proposals. Security vulnerabilities must be reported privately
+as described in [SECURITY.md](SECURITY.md).
+
+Project decisions and merge authority are documented in
+[GOVERNANCE.md](GOVERNANCE.md). All participants must follow the
+[Code of Conduct](CODE_OF_CONDUCT.md). The project is licensed under
+[Apache License 2.0](LICENSE).

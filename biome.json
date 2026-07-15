@@ -1,6 +1,6 @@
 {
   "files": {
-    "includes": ["**", "!dist", "!coverage", "!node_modules"]
+    "includes": ["**", "!dist", "!coverage", "!node_modules", "!.venv", "!site"]
   },
   "formatter": {
     "enabled": true,

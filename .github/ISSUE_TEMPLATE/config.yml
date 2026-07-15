@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/damienbenveniste/substack-mcp/security/advisories/new
+    about: Privately report suspected vulnerabilities, credential exposure, or private-data exposure.
+  - name: Contribution guidelines
+    url: https://github.com/damienbenveniste/substack-mcp/blob/main/CONTRIBUTING.md
+    about: Review the draft-only scope, privacy rules, testing expectations, and fork-based workflow.

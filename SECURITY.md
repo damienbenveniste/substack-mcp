@@ -1,6 +1,12 @@
 # Security
 
-This project is a private, single-user Substack draft MCP server. It uses Substack's unofficial/internal API and must be treated as personal automation unless OAuth and a broader security review are completed.
+This repository is open source, but each deployed server handles credentials and drafts for a private Substack account. It uses Substack's unofficial/internal API and must be treated as personal automation unless OAuth and a broader security review are completed.
+
+## Supported Versions
+
+Security fixes are applied to the latest code on `main`. Older commits and
+unreleased local modifications are not supported. When tagged releases are
+introduced, this section will identify any additional supported release lines.
 
 ## Product Boundary
 
@@ -71,4 +77,13 @@ Rotate the Substack session token if an ngrok URL was shared, logs show unexpect
 
 ## Reporting
 
-This is a private repo workflow. Report issues directly to the repository owner and avoid including secrets or private draft content in bug reports.
+Report suspected vulnerabilities privately through
+[GitHub Security Advisories](https://github.com/damienbenveniste/substack-mcp/security/advisories/new).
+Do not open a public issue for a vulnerability, suspected credential exposure,
+or private-data exposure. Include only the minimum redacted information needed
+to reproduce and assess the problem; never submit credentials, session cookies,
+tokens, private drafts, or raw responses.
+
+The maintainer will acknowledge a report within seven days and will coordinate
+validation, remediation, and disclosure through the private advisory. Ordinary
+non-security bugs should use the repository's public bug-report form.

@@ -6,6 +6,8 @@
 coverage/
 dist/
 node_modules/
+.venv/
+site/
 .playwright-cli/
 
 .DS_Store
