@@ -461,7 +461,7 @@ Register `https://YOUR_ASSIGNED_DOMAIN.ngrok-free.dev/mcp` in the remote MCP cli
 
 ### ChatGPT
 
-Enable developer mode, create a custom app in **Settings > Apps**, and use the stable HTTPS `/mcp` URL with no authentication for this short-lived local flow. Availability and workspace controls vary by plan. See the complete [ChatGPT tutorial](docs/CLIENT_SETUP.md#chatgpt-remote) and [OpenAI's current setup guide](https://help.openai.com/en/articles/12584461-developer-mode-and-mcp-apps-in-chatgpt).
+Enable developer mode, create a custom plugin in **Settings > Plugins**, and use the stable HTTPS `/mcp` URL with no authentication for this short-lived local flow. Availability and workspace controls vary by plan. See the complete [ChatGPT tutorial](docs/CLIENT_SETUP.md#chatgpt-remote) and [OpenAI's current setup guide](https://help.openai.com/en/articles/12584461-developer-mode-and-mcp-apps-in-chatgpt).
 
 ### Claude
 
