@@ -27,6 +27,11 @@ npm run mcp:preflight -- --require-live
 
 `npm ci` installs exactly the dependencies in the committed lockfile. `npm run auth:setup` opens a temporary page on `127.0.0.1` and guides you through authenticating your own publication. On macOS it can import the most recently used Chrome session after you explicitly approve it; an isolated browser sign-in and manual cookie entry are available as fallbacks.
 
+<figure markdown="span">
+  ![The local Connect Substack page with a publication URL field and a Use current Chrome session button](assets/images/connect.png){ width="760" loading="lazy" }
+  <figcaption>The local authentication page opened by <code>npm run auth:setup</code>.</figcaption>
+</figure>
+
 Successful setup stores the publication URL, session value, numeric user ID, and a generated preview-signing secret in the ignored, owner-only `.data/substack-auth.json` file. Do not commit or share that file.
 
 The focused preflight checks that the local credentials and runtime prerequisites are present and valid-shaped. It does not create, update, publish, or delete a Substack post.
@@ -96,6 +101,11 @@ Follow ngrok's official [Agent CLI quickstart](https://ngrok.com/docs/getting-st
 
 Every ngrok account receives an automatically generated Dev Domain. Open the ngrok dashboard and look under **Domains** (the exact navigation label may vary), then copy the account's assigned hostname. On the free plan, the name is assigned for you and cannot be changed. See ngrok's official [Domains guide](https://ngrok.com/docs/gateway/domains#dev-domains).
 
+<figure markdown="span">
+  ![The ngrok Domains dashboard showing an automatically assigned Dev Domain](assets/images/ngrok-endpoint.png){ width="1000" loading="lazy" }
+  <figcaption>Copy the assigned <code>ngrok-free.dev</code> hostname from the ngrok Domains dashboard.</figcaption>
+</figure>
+
 Use only a placeholder in reusable commands and documentation:
 
 ```text
@@ -143,22 +153,27 @@ Product UI labels and eligibility can differ by plan. Use the linked official do
 
 ### ChatGPT remote
 
-ChatGPT does not connect directly to a local MCP process; use the remote HTTPS endpoint. Full MCP support, including this server's write actions, is currently documented for Business and Enterprise/Edu workspaces. Admin or owner action may also be required. Consult OpenAI's current [Developer mode and MCP apps in ChatGPT](https://help.openai.com/en/articles/12584461-developer-mode-and-mcp-apps-in-chatgpt) guide before starting because plan availability can change.
+ChatGPT does not connect directly to a local MCP process; use the remote HTTPS endpoint. Full MCP support, including this server's write actions, is currently documented for Business and Enterprise/Edu workspaces. Admin or owner action may also be required. Consult OpenAI's current [Developer mode documentation](https://help.openai.com/en/articles/12584461-developer-mode-and-mcp-apps-in-chatgpt) before starting because plan availability can change.
+
+<figure markdown="span">
+  ![The ChatGPT New Plugin dialog with Server URL selected and fields for the plugin name, description, endpoint, and authentication](assets/images/chatgpt-plugin.png){ width="760" loading="lazy" }
+  <figcaption>The ChatGPT <strong>New Plugin</strong> dialog used in the steps below.</figcaption>
+</figure>
 
 1. Keep the local server and ngrok tunnel running, and confirm the remote smoke test passes.
-2. In ChatGPT on the web, enable **Developer mode** for your account. Depending on plan and role, this may be under **Settings → Apps → Advanced Settings** or enabled while creating an app from workspace settings.
-3. Open **Settings → Apps → Create**, or **Workspace Settings → Apps → Create** if your workspace uses admin-managed apps.
-4. Enter a clear name such as `Substack Drafts` and provide the complete remote endpoint:
+2. In ChatGPT on the web, enable **Developer mode** for your account. Depending on plan and role, this may be available in advanced settings or while creating a plugin from workspace settings.
+3. Open **Settings → Plugins**, select **+**, and choose to create a plugin. If your workspace centrally manages plugins, an owner or administrator may need to complete this step.
+4. Enter a clear plugin name such as `Substack Drafts` and provide the complete remote endpoint in **Server URL**:
 
    ```text
    https://YOUR_ASSIGNED_DOMAIN.ngrok-free.dev/mcp
    ```
 
-5. For this short-lived test endpoint, select the option that represents no authentication, if the form asks. Never paste Substack credentials into the app form.
+5. For this short-lived test endpoint, select the option that represents no authentication, if the form asks. Never paste Substack credentials into the plugin form.
 6. Select **Scan Tools**, wait for discovery to finish, verify that seven tools appear, and select **Create**.
-7. Start a new chat, enable the draft app from the tools/apps menu, and begin with a validation or preview request before approving any draft write.
+7. Start a new chat, enable the draft plugin from the tools or plugins menu, and begin with a validation or preview request before approving any draft write.
 
-Only publish the app to a workspace after replacing this short-lived no-auth tunnel with an appropriately authenticated, reviewed deployment.
+Only share or publish the plugin to a workspace after replacing this short-lived no-auth tunnel with an appropriately authenticated, reviewed deployment.
 
 ### Claude remote
 
@@ -264,7 +279,7 @@ When you pull a new version or change server code:
    - HTTP: restart `npm run start:http`, then restart ngrok with the same assigned Dev Domain.
    - stdio: completely restart the client so it launches the new `dist/stdio.js` process.
 4. Refresh the client's cached tool schemas:
-   - ChatGPT draft apps: scan or refresh tools/actions. Published workspace apps can use a frozen schema snapshot; current Business workspaces may need to recreate and republish an app, while Enterprise/Edu admins may have a **Refresh** action.
+   - ChatGPT draft plugins: scan or refresh tools/actions. Published workspace plugins can use a frozen schema snapshot; current Business workspaces may need to recreate and republish a plugin, while Enterprise/Edu admins may have a **Refresh** action.
    - Claude remote connectors: if the schema remains stale, remove the custom connector and add it again, as described in Anthropic's connector guide.
    - Claude Desktop local stdio: completely quit and reopen the app.
    - Claude Code: inspect `/mcp`; restart the session or remove and re-add the server if it does not reconnect with the new schema.
@@ -321,7 +336,7 @@ Changing code does not change the assigned ngrok hostname. Changing the transpor
 
 ## Official references
 
-- [OpenAI: Developer mode and MCP apps in ChatGPT](https://help.openai.com/en/articles/12584461-developer-mode-and-mcp-apps-in-chatgpt)
+- [OpenAI: Developer mode documentation](https://help.openai.com/en/articles/12584461-developer-mode-and-mcp-apps-in-chatgpt)
 - [Anthropic: Get started with custom connectors using remote MCP](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp)
 - [Anthropic: Connect Claude Code to tools via MCP](https://code.claude.com/docs/en/mcp)
 - [Model Context Protocol: Connect to local MCP servers](https://modelcontextprotocol.io/docs/develop/connect-local-servers)
