@@ -231,7 +231,7 @@ export function usage(): string {
     "Connects to a remote Streamable HTTP MCP endpoint with static bearer auth,",
     "checks /healthz on the same origin, verifies missing/wrong bearer tokens",
     "return 401 with a Bearer challenge, lists tools, verifies the V1",
-    "draft-only tool surface, and calls validate_newsletter_content plus",
+    "draft-workflow tool surface, and calls validate_newsletter_content plus",
     "preview_draft with the rich Markdown fixture. It does not call Substack",
     "and does not run write tools.",
     "",

@@ -70,7 +70,7 @@ interface PackageJson {
 const README_V1_REQUIRED_MARKERS = [
   "This project uses Substack's unofficial/internal API.",
   "## Safety Boundary",
-  "V1 must not publish, schedule, delete, email, or create public Substack Notes.",
+  "It does not publish, schedule, delete, email, or create public Substack Notes.",
   "## Supported Formatting",
   "## Known Limitations",
   "## Quickstart",
@@ -258,7 +258,7 @@ export function buildV1AcceptanceStatus(
         localInspectorCliGate(root, packageJson, readme),
         localInspectorCliGate(root, packageJson, readme) ===
           "local_evidence_available"
-          ? "`npm run smoke:inspector` can run MCP Inspector CLI `tools/list`, verify the exact V1 draft-only tool surface, and write sanitized gate 3 evidence."
+          ? "`npm run smoke:inspector` can run MCP Inspector CLI `tools/list`, verify the exact V1 draft-workflow tool surface, and write sanitized gate 3 evidence."
           : "MCP Inspector CLI smoke tooling, tests, or README documentation are missing.",
         "Run `npm run build` and `npm run smoke:inspector -- --evidence-artifact .data/v1/gate-03-mcp-inspector.md` before release.",
       ),

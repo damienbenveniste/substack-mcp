@@ -136,7 +136,7 @@ export function localStdioUsage(): string {
     "Usage: npm run smoke:stdio -- [options]",
     "",
     "Launches the built stdio MCP server, lists tools over the MCP stdio",
-    "transport, verifies the V1 draft-only tool surface, and calls",
+    "transport, verifies the V1 draft-workflow tool surface, and calls",
     "validate_newsletter_content and preview_draft with the rich Markdown",
     "fixture. It does not call Substack and does not run write tools.",
     "",

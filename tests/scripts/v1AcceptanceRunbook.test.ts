@@ -633,7 +633,7 @@ describe("buildV1AcceptanceRunbook", () => {
         "- Config path or add command: <replace with Claude Code/Cursor stdio config path or add command>",
       );
       expect(readFileSync(stdioClientTemplate, "utf8")).toContain(
-        "- Tool-list result: <replace with exact seven V1 draft-only tools listed through Claude Code or Cursor>",
+        "- Tool-list result: <replace with exact seven V1 draft-workflow tools listed through Claude Code or Cursor>",
       );
       expect(readFileSync(stdioClientTemplate, "utf8")).toContain(
         "- Validation call result: <replace with validate_newsletter_content success through Claude Code or Cursor>",
@@ -792,7 +792,7 @@ describe("buildV1AcceptanceRunbook", () => {
         "- Manual flow result: <replace with ChatGPT validate/preview/create draft summary>",
       );
       expect(template).toContain(
-        "- Tool-list result: <replace with exactly seven V1 draft-only tools listed through the ChatGPT connector>",
+        "- Tool-list result: <replace with exactly seven V1 draft-workflow tools listed through the ChatGPT connector>",
       );
       expect(template).toContain(
         "- Draft or review reference: <replace with non-sensitive Substack draft URL, numeric draft ID, screenshot reference, or manual review reference>",

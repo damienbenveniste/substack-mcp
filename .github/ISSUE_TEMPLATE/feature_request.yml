@@ -1,5 +1,5 @@
 name: Feature request
-description: Propose a draft-only improvement that can be tested without private data or live network access.
+description: Propose a draft-workflow improvement that can be tested without private data or live network access.
 title: "[Feature]: "
 labels:
   - enhancement
@@ -7,14 +7,14 @@ body:
   - type: markdown
     attributes:
       value: |
-        This project is **draft-only** and uses Substack's unofficial, unstable API. Do not include credentials, cookies, tokens, private drafts, private images, or raw API responses. Requests to publish, schedule, delete, email, or create public Notes are out of scope.
+        This project manages unpublished Substack drafts and uses Substack's unofficial, unstable API. Do not include credentials, cookies, tokens, private drafts, private images, or raw API responses. Requests to publish, schedule, delete, email, or create public Notes are out of scope.
 
   - type: checkboxes
     id: boundaries
     attributes:
       label: Scope and privacy check
       options:
-        - label: This proposal remains draft-only and does not publish, schedule, delete, email, or create public Notes.
+        - label: This proposal preserves manual publishing and does not publish, schedule, delete, email, or create public Notes.
           required: true
         - label: I have not included credentials, tokens, cookies, private draft data, raw responses, or personal information.
           required: true

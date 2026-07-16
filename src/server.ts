@@ -83,8 +83,8 @@ const MANUAL_REVIEW_BOUNDARY =
   "The user must review and publish manually inside Substack.";
 const READ_ONLY_BOUNDARY = `This tool is read-only. ${FORBIDDEN_ACTIONS_BOUNDARY}`;
 const PREVIEW_BOUNDARY = `This tool creates or modifies no Substack data. ${FORBIDDEN_ACTIONS_BOUNDARY}`;
-const DRAFT_WRITE_BOUNDARY = `This tool creates or modifies a Substack draft only. ${FORBIDDEN_ACTIONS_BOUNDARY} ${MANUAL_REVIEW_BOUNDARY}`;
-const IMAGE_UPLOAD_BOUNDARY = `This tool uploads image assets for draft use only. ${FORBIDDEN_ACTIONS_BOUNDARY} ${MANUAL_REVIEW_BOUNDARY}`;
+const DRAFT_WRITE_BOUNDARY = `This tool creates or modifies an unpublished Substack draft. ${FORBIDDEN_ACTIONS_BOUNDARY} ${MANUAL_REVIEW_BOUNDARY}`;
+const IMAGE_UPLOAD_BOUNDARY = `This tool uploads image assets for use in unpublished drafts. ${FORBIDDEN_ACTIONS_BOUNDARY} ${MANUAL_REVIEW_BOUNDARY}`;
 const EXACT_IMAGE_ARTIFACT_RULE =
   "Use the exact image artifact selected by the user or produced by image generation. Never redraw, recreate, replace, simplify, or substitute a fallback image merely to satisfy the tool schema.";
 

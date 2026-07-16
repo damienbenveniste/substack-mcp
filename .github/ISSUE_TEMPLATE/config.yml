@@ -5,4 +5,4 @@ contact_links:
     about: Privately report suspected vulnerabilities, credential exposure, or private-data exposure.
   - name: Contribution guidelines
     url: https://github.com/damienbenveniste/substack-mcp/blob/main/CONTRIBUTING.md
-    about: Review the draft-only scope, privacy rules, testing expectations, and fork-based workflow.
+    about: Review the draft-workflow scope, privacy rules, testing expectations, and fork-based workflow.

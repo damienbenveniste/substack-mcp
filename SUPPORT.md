@@ -4,7 +4,7 @@ Use the repository's public channels for non-sensitive help:
 
 - Ask setup and usage questions in [GitHub Discussions](https://github.com/damienbenveniste/substack-mcp/discussions).
 - Report reproducible bugs with the [bug report form](https://github.com/damienbenveniste/substack-mcp/issues/new?template=bug_report.yml).
-- Propose draft-only improvements with the [feature request form](https://github.com/damienbenveniste/substack-mcp/issues/new?template=feature_request.yml).
+- Propose draft-workflow improvements with the [feature request form](https://github.com/damienbenveniste/substack-mcp/issues/new?template=feature_request.yml).
 
 Search existing documentation, discussions, issues, and pull requests before
 opening a new thread. Support is provided on a best-effort basis by the

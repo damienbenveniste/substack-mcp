@@ -1,7 +1,7 @@
 # Contributing to substack-mcp
 
 Thank you for helping improve `substack-mcp`. This project is an open-source,
-self-hosted, draft-only MCP server for Substack newsletter workflows. Contributions should
+self-hosted MCP server for Substack newsletter draft workflows. Contributions should
 preserve that narrow product and safety boundary.
 
 ## Before You Start
@@ -23,9 +23,9 @@ request is not sufficient evidence for a contribution.
 
 ## Product Boundary
 
-This project is draft-only. Contributions must not add publishing, scheduling,
-deletion, email delivery, or public Substack Notes. Users must review and
-publish drafts manually in Substack.
+This project manages unpublished drafts. Contributions must not add publishing,
+scheduling, deletion, email delivery, or public Substack Notes. Users must
+review and publish drafts manually in Substack.
 
 Do not present deployment, OAuth, or third-party client behavior as implemented
 or verified unless the repository's current public documentation and tests

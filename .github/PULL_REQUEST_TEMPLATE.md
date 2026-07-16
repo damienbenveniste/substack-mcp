@@ -42,9 +42,9 @@
 
 <!-- Documentation changed, or explain why no documentation update is needed. -->
 
-## Draft-only Boundary
+## Manual Publishing Boundary
 
-- [ ] This change remains draft-only.
+- [ ] This change preserves manual publishing in Substack.
 - [ ] It does not publish, schedule, delete, email, or create public Substack
       Notes.
 - [ ] Users still review and publish manually in Substack.

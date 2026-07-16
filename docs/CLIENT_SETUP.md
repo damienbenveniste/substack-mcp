@@ -1,6 +1,6 @@
 # Connect the Substack Draft MCP Server to Your AI Client
 
-This guide takes the server from a fresh checkout to a working MCP connection in ChatGPT, Claude, Claude Desktop, or Claude Code. The server is intentionally draft-only: you review and publish in Substack yourself.
+This guide takes the server from a fresh checkout to a working MCP connection in ChatGPT, Claude, Claude Desktop, or Claude Code. The server manages unpublished drafts; you review and publish them in Substack yourself.
 
 Substack does not provide an official public API for this workflow. This project uses unofficial endpoints, so integrations may need maintenance when Substack changes its editor or API behavior.
 

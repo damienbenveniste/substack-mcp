@@ -162,7 +162,7 @@ describe("renderLocalStdioEvidenceArtifact", () => {
       "- Config path or add command: <replace with Claude Code/Cursor stdio config path or add command>",
     );
     expect(rendered).toContain(
-      "- Tool-list result: <replace with exact seven V1 draft-only tools listed through Claude Code or Cursor>",
+      "- Tool-list result: <replace with exact seven V1 draft-workflow tools listed through Claude Code or Cursor>",
     );
     expect(rendered).toContain(
       "- Validation call result: <replace with validate_newsletter_content success through Claude Code or Cursor>",
