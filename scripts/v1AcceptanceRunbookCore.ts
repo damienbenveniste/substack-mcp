@@ -475,7 +475,7 @@ function suggestedEvidenceDetailSection(
         "",
         "- Connector URL: <replace with public HTTPS /mcp URL or screenshot reference>",
         "- ChatGPT surface tested: <replace with workspace/account or connector screen reference>",
-        "- Tool-list result: <replace with exactly seven V1 draft-only tools listed through the ChatGPT connector>",
+        "- Tool-list result: <replace with exactly seven V1 draft-workflow tools listed through the ChatGPT connector>",
         "- Manual flow result: <replace with ChatGPT validate/preview/create draft summary>",
         "- Draft or review reference: <replace with non-sensitive Substack draft URL, numeric draft ID, screenshot reference, or manual review reference>",
         "- Tunnel exposure window: <replace with bounded start/end time or numeric duration>",
@@ -518,7 +518,7 @@ function suggestedEvidenceDetailSection(
         "- Client tested: <replace with real header-capable HTTP client name and version>",
         "- Endpoint tested: <replace with public HTTPS /mcp endpoint tested through the header-capable client>",
         "- Header configuration method: <replace with how Authorization header was configured without the token value>",
-        "- Tool-list result: <replace with exact seven V1 draft-only tools listed through the client>",
+        "- Tool-list result: <replace with exact seven V1 draft-workflow tools listed through the client>",
         "- Validation call result: <replace with validate_newsletter_content success through the client>",
         "- Rejection proof: <replace with missing and wrong bearer 401 rejection command or artifact reference>",
         "- Token redaction review: <replace with confirmation that no bearer token or token value is included, recorded, printed, pasted, exposed, or logged>",
@@ -531,7 +531,7 @@ function suggestedEvidenceDetailSection(
         "- Client tested: <replace with Claude Code or Cursor version>",
         "- Config path or add command: <replace with Claude Code/Cursor stdio config path or add command>",
         "- Server entrypoint path: <replace with absolute path to dist/stdio.js>",
-        "- Tool-list result: <replace with exact seven V1 draft-only tools listed through Claude Code or Cursor>",
+        "- Tool-list result: <replace with exact seven V1 draft-workflow tools listed through Claude Code or Cursor>",
         "- Validation call result: <replace with validate_newsletter_content success through Claude Code or Cursor>",
         "- Credential locality review: <replace with confirmation that Substack credentials came from local environment variables and were not recorded, committed, pasted into client config, or exposed remotely>",
         "",
@@ -565,7 +565,7 @@ function suggestedEvidenceChecklist(
     case 3:
       return [
         "MCP Inspector connected to `http://localhost:8787/mcp`.",
-        "Inspector listed exactly the seven V1 draft-only tools.",
+        "Inspector listed exactly the seven V1 draft-workflow tools.",
         "No publish, delete, schedule, email, or Notes tool appeared.",
       ];
     case 7:
@@ -633,7 +633,7 @@ function suggestedEvidenceChecklist(
     case 15:
       return [
         "Built stdio entrypoint was configured in Claude Code or Cursor with local env-based credentials.",
-        "Client listed the V1 draft-only tools.",
+        "Client listed the V1 draft-workflow tools.",
         "Client successfully called `validate_newsletter_content`.",
         "Gate 15 manual client details identify the client version, Claude Code/Cursor stdio config path or add command, entrypoint path, tool-list result, validation result, and local-credentials review.",
       ];

@@ -166,7 +166,7 @@ describe("renderRemoteNoAuthEvidenceArtifact", () => {
       "- ChatGPT surface tested: <replace with workspace/account or connector screen reference>",
     );
     expect(rendered).toContain(
-      "- Tool-list result: <replace with exactly seven V1 draft-only tools listed through the ChatGPT connector>",
+      "- Tool-list result: <replace with exactly seven V1 draft-workflow tools listed through the ChatGPT connector>",
     );
     expect(rendered).toContain(
       "- Manual flow result: <replace with ChatGPT validate/preview/create draft summary>",

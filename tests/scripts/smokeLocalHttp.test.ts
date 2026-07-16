@@ -275,7 +275,7 @@ describe("renderLocalHttpEvidenceArtifact", () => {
     expect(rendered).toContain("- Method: tools/list");
     expect(rendered).toContain("- Tool count: 7");
     expect(rendered).toContain(
-      "- [x] MCP Inspector CLI listed the same seven V1 draft-only tools.",
+      "- [x] MCP Inspector CLI listed the same seven V1 draft-workflow tools.",
     );
     expect(rendered).toContain("http://127.0.0.1:8787/mcp/<redacted>");
     expect(rendered).not.toContain("/mcp/private");

@@ -93,7 +93,7 @@ export function noAuthUsage(): string {
     "",
     "Connects to a remote Streamable HTTP MCP endpoint with no Authorization",
     "header, checks /healthz on the same origin, lists tools, verifies the V1",
-    "draft-only tool surface, and calls validate_newsletter_content plus",
+    "draft-workflow tool surface, and calls validate_newsletter_content plus",
     "preview_draft with the rich Markdown fixture. It does not call Substack",
     "and does not run write tools.",
     "",

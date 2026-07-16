@@ -12,9 +12,9 @@ artifacts without giving an MCP client the ability to publish.
 
 ## Safety boundary
 
-The server is intentionally draft-only. It cannot publish, schedule, delete,
-email, or create public Substack Notes. Create and update operations require a
-short-lived confirmation token produced by a matching preview.
+The server manages unpublished Substack drafts. It cannot publish, schedule,
+delete, email, or create public Substack Notes. Create and update operations
+require a short-lived confirmation token produced by a matching preview.
 
 Substack credentials remain on the server. Do not send session cookies, bearer
 tokens, preview secrets, or private draft content through issue reports, tool

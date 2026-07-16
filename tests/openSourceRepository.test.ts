@@ -15,7 +15,7 @@ describe("open-source repository configuration", () => {
     expect(read("GOVERNANCE.md")).toContain("sole maintainer");
     expect(read(".github/dependabot.yml")).toContain("package-ecosystem: pip");
     expect(read(".github/PULL_REQUEST_TEMPLATE.md")).toContain(
-      "Draft-only Boundary",
+      "Manual Publishing Boundary",
     );
     expect(read("SECURITY.md")).toContain("security/advisories/new");
     expect(read("LICENSE")).toContain(

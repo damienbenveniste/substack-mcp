@@ -1021,7 +1021,7 @@ function validManualArtifactText(): string {
     "",
     "- Connector URL: https://example.ngrok.app/mcp",
     "- ChatGPT surface tested: ChatGPT developer mode connector",
-    "- Tool-list result: exactly seven V1 draft-only tools listed through the ChatGPT connector",
+    "- Tool-list result: exactly seven V1 draft-workflow tools listed through the ChatGPT connector",
     "- Manual flow result: ChatGPT validate_newsletter_content and preview_draft succeeded, then create_draft created an unpublished draft after confirmation",
     "- Draft or review reference: non-sensitive screenshot reference from the ChatGPT connector draft review",
     "- Tunnel exposure window: bounded ngrok tunnel window from 2026-07-08T12:00:00Z to 2026-07-08T12:05:00Z",

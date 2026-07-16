@@ -2,8 +2,8 @@
 
 ## Project Scope
 
-`substack-mcp` is an open-source, self-hosted, draft-only MCP server for
-personal Substack newsletter workflows. Publishing, scheduling, deletion, email delivery, and public Substack
+`substack-mcp` is an open-source, self-hosted MCP server for managing
+Substack newsletter drafts. Publishing, scheduling, deletion, email delivery, and public Substack
 Notes are outside the project boundary. Substack's draft API is unofficial and
 unstable, so compatibility claims require deterministic mocked or fixture-based
 evidence.
@@ -32,7 +32,7 @@ The maintainer seeks clear technical evidence and constructive input, but final
 decisions rest with the maintainer. Decisions prioritize:
 
 1. protecting credentials and private draft data;
-2. preserving the draft-only boundary;
+2. preserving the manual-publishing boundary;
 3. deterministic behavior and testability;
 4. compatibility with the repository's supported TypeScript and MCP surface;
 5. focused maintenance cost.
@@ -49,7 +49,7 @@ change requires:
 - maintainer review and approval;
 - deterministic mocked tests for behavior changes;
 - documentation updates when public behavior changes; and
-- compliance with the security, privacy, and draft-only requirements in
+- compliance with the security, privacy, and manual-publishing requirements in
   [CONTRIBUTING.md](CONTRIBUTING.md).
 
 The maintainer may request changes, close inactive work, or decline changes that

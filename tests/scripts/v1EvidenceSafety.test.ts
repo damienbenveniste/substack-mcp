@@ -245,7 +245,7 @@ describe("scanEvidenceArtifactText gate structure", () => {
     );
   });
 
-  it("rejects gate 7 evidence that does not confirm the created item stayed draft-only", () => {
+  it("rejects gate 7 evidence that does not confirm the created item remained unpublished", () => {
     withTextArtifact(
       [
         "## Gate 7 Manual Review Details",
@@ -266,7 +266,7 @@ describe("scanEvidenceArtifactText gate structure", () => {
       ].join("\n"),
       (path) => {
         expect(scanEvidenceArtifactText(path, ".data/v1/evidence.md", 7)).toBe(
-          "Gate 7 Unpublished status review field must confirm the Substack item stayed draft-only or unpublished; published/public status evidence does not satisfy gate 7: .data/v1/evidence.md.",
+          "Gate 7 Unpublished status review field must confirm the Substack item remained unpublished; published/public status evidence does not satisfy gate 7: .data/v1/evidence.md.",
         );
       },
     );
@@ -293,7 +293,7 @@ describe("scanEvidenceArtifactText gate structure", () => {
       ].join("\n"),
       (path) => {
         expect(scanEvidenceArtifactText(path, ".data/v1/evidence.md", 7)).toBe(
-          "Gate 7 Unpublished status review field must confirm the Substack item stayed draft-only or unpublished; published/public status evidence does not satisfy gate 7: .data/v1/evidence.md.",
+          "Gate 7 Unpublished status review field must confirm the Substack item remained unpublished; published/public status evidence does not satisfy gate 7: .data/v1/evidence.md.",
         );
       },
     );
@@ -362,7 +362,7 @@ describe("scanEvidenceArtifactText gate structure", () => {
     );
   });
 
-  it("rejects gate 8 evidence that does not confirm the updated item stayed draft-only", () => {
+  it("rejects gate 8 evidence that does not confirm the updated item remained unpublished", () => {
     withTextArtifact(
       [
         "## Gate 8 Update Review Details",
@@ -379,7 +379,7 @@ describe("scanEvidenceArtifactText gate structure", () => {
       ].join("\n"),
       (path) => {
         expect(scanEvidenceArtifactText(path, ".data/v1/evidence.md", 8)).toBe(
-          "Gate 8 Unpublished status after update field must confirm the Substack item stayed draft-only or unpublished; published/public status evidence does not satisfy gate 8: .data/v1/evidence.md.",
+          "Gate 8 Unpublished status after update field must confirm the Substack item remained unpublished; published/public status evidence does not satisfy gate 8: .data/v1/evidence.md.",
         );
       },
     );
@@ -1633,7 +1633,7 @@ describe("scanEvidenceArtifactText gate structure", () => {
       ].join("\n"),
       (path) => {
         expect(scanEvidenceArtifactText(path, ".data/v1/gate-11.md", 11)).toBe(
-          "ChatGPT/ngrok evidence artifact is missing current remote-smoke proof(s) - Tool count: 7, - [x] Remote endpoint responded on `/healthz`., - [x] Remote noauth MCP endpoint listed exactly the seven V1 draft-only tools., - [x] `validate_newsletter_content` completed against the rich Markdown fixture., - [x] `preview_draft` completed without calling Substack or write tools.; rerun smoke:remote-noauth or smoke:ngrok-noauth before recording gate 11: .data/v1/gate-11.md.",
+          "ChatGPT/ngrok evidence artifact is missing current remote-smoke proof(s) - Tool count: 7, - [x] Remote endpoint responded on `/healthz`., - [x] Remote noauth MCP endpoint listed exactly the seven V1 draft-workflow tools., - [x] `validate_newsletter_content` completed against the rich Markdown fixture., - [x] `preview_draft` completed without calling Substack or write tools.; rerun smoke:remote-noauth or smoke:ngrok-noauth before recording gate 11: .data/v1/gate-11.md.",
         );
       },
     );
@@ -1653,7 +1653,7 @@ describe("scanEvidenceArtifactText gate structure", () => {
         "## Required Evidence Checklist",
         "",
         "- [x] Remote endpoint responded on `/healthz`.",
-        "- [x] Remote noauth MCP endpoint listed exactly the seven V1 draft-only tools.",
+        "- [x] Remote noauth MCP endpoint listed exactly the seven V1 draft-workflow tools.",
         "- [x] `validate_newsletter_content` completed against the rich Markdown fixture.",
         "- [x] `preview_draft` completed without calling Substack or write tools.",
         "",
@@ -1683,7 +1683,7 @@ describe("scanEvidenceArtifactText gate structure", () => {
         "## Required Evidence Checklist",
         "",
         "- [x] Remote endpoint responded on `/healthz`.",
-        "- [x] Remote noauth MCP endpoint listed exactly the seven V1 draft-only tools.",
+        "- [x] Remote noauth MCP endpoint listed exactly the seven V1 draft-workflow tools.",
         "- [x] `validate_newsletter_content` completed against the rich Markdown fixture.",
         "- [x] `preview_draft` completed without calling Substack or write tools.",
         "",
@@ -1742,13 +1742,13 @@ describe("scanEvidenceArtifactText gate structure", () => {
       ),
       (path) => {
         expect(scanEvidenceArtifactText(path, ".data/v1/gate-11.md", 11)).toBe(
-          "Gate 11 Tool-list result field must confirm the ChatGPT connector listed exactly the seven V1 draft-only tools: .data/v1/gate-11.md.",
+          "Gate 11 Tool-list result field must confirm the ChatGPT connector listed exactly the seven V1 draft-workflow tools: .data/v1/gate-11.md.",
         );
       },
     );
   });
 
-  it("rejects ChatGPT/ngrok evidence without V1 draft-only tool-list proof", () => {
+  it("rejects ChatGPT/ngrok evidence without V1 draft-workflow tool-list proof", () => {
     withTextArtifact(
       chatGptNgrokEvidenceWithDetailOverride(
         "Tool-list result",
@@ -1756,7 +1756,7 @@ describe("scanEvidenceArtifactText gate structure", () => {
       ),
       (path) => {
         expect(scanEvidenceArtifactText(path, ".data/v1/gate-11.md", 11)).toBe(
-          "Gate 11 Tool-list result field must confirm the ChatGPT connector listed exactly the seven V1 draft-only tools: .data/v1/gate-11.md.",
+          "Gate 11 Tool-list result field must confirm the ChatGPT connector listed exactly the seven V1 draft-workflow tools: .data/v1/gate-11.md.",
         );
       },
     );
@@ -1766,11 +1766,11 @@ describe("scanEvidenceArtifactText gate structure", () => {
     withTextArtifact(
       chatGptNgrokEvidenceWithDetailOverride(
         "Tool-list result",
-        "exactly seven V1 draft-only tools listed through the ChatGPT connector, but eight tools were visible",
+        "exactly seven V1 draft-workflow tools listed through the ChatGPT connector, but eight tools were visible",
       ),
       (path) => {
         expect(scanEvidenceArtifactText(path, ".data/v1/gate-11.md", 11)).toBe(
-          "Gate 11 Tool-list result field must confirm the ChatGPT connector listed exactly the seven V1 draft-only tools: .data/v1/gate-11.md.",
+          "Gate 11 Tool-list result field must confirm the ChatGPT connector listed exactly the seven V1 draft-workflow tools: .data/v1/gate-11.md.",
         );
       },
     );
@@ -1983,13 +1983,13 @@ describe("scanEvidenceArtifactText gate structure", () => {
       ),
       (path) => {
         expect(scanEvidenceArtifactText(path, ".data/v1/gate-14.md", 14)).toBe(
-          "Gate 14 Tool-list result field must confirm the header-capable client listed exactly the seven V1 draft-only tools: .data/v1/gate-14.md.",
+          "Gate 14 Tool-list result field must confirm the header-capable client listed exactly the seven V1 draft-workflow tools: .data/v1/gate-14.md.",
         );
       },
     );
   });
 
-  it("rejects static-bearer evidence without draft-only tool-list proof", () => {
+  it("rejects static-bearer evidence without draft-workflow tool-list proof", () => {
     withTextArtifact(
       staticBearerEvidenceWithDetailOverride(
         "Tool-list result",
@@ -1997,7 +1997,7 @@ describe("scanEvidenceArtifactText gate structure", () => {
       ),
       (path) => {
         expect(scanEvidenceArtifactText(path, ".data/v1/gate-14.md", 14)).toBe(
-          "Gate 14 Tool-list result field must confirm the header-capable client listed exactly the seven V1 draft-only tools: .data/v1/gate-14.md.",
+          "Gate 14 Tool-list result field must confirm the header-capable client listed exactly the seven V1 draft-workflow tools: .data/v1/gate-14.md.",
         );
       },
     );
@@ -2007,11 +2007,11 @@ describe("scanEvidenceArtifactText gate structure", () => {
     withTextArtifact(
       staticBearerEvidenceWithDetailOverride(
         "Tool-list result",
-        "exactly seven V1 draft-only tools listed through the header-capable client, but tool count: 8",
+        "exactly seven V1 draft-workflow tools listed through the header-capable client, but tool count: 8",
       ),
       (path) => {
         expect(scanEvidenceArtifactText(path, ".data/v1/gate-14.md", 14)).toBe(
-          "Gate 14 Tool-list result field must confirm the header-capable client listed exactly the seven V1 draft-only tools: .data/v1/gate-14.md.",
+          "Gate 14 Tool-list result field must confirm the header-capable client listed exactly the seven V1 draft-workflow tools: .data/v1/gate-14.md.",
         );
       },
     );
@@ -2118,7 +2118,7 @@ describe("scanEvidenceArtifactText gate structure", () => {
       ].join("\n"),
       (path) => {
         expect(scanEvidenceArtifactText(path, ".data/v1/gate-15.md", 15)).toBe(
-          "Stdio client evidence artifact is missing current local-stdio smoke proof(s) - Tool count: 7, - [x] Built stdio entrypoint launched and exposed exactly the seven V1 draft-only tools., - [x] `validate_newsletter_content` completed against the rich Markdown fixture., - [x] `preview_draft` completed without calling Substack or write tools.; rerun smoke:stdio before recording gate 15: .data/v1/gate-15.md.",
+          "Stdio client evidence artifact is missing current local-stdio smoke proof(s) - Tool count: 7, - [x] Built stdio entrypoint launched and exposed exactly the seven V1 draft-workflow tools., - [x] `validate_newsletter_content` completed against the rich Markdown fixture., - [x] `preview_draft` completed without calling Substack or write tools.; rerun smoke:stdio before recording gate 15: .data/v1/gate-15.md.",
         );
       },
     );
@@ -2136,7 +2136,7 @@ describe("scanEvidenceArtifactText gate structure", () => {
         "",
         "## Required Evidence Checklist",
         "",
-        "- [x] Built stdio entrypoint launched and exposed exactly the seven V1 draft-only tools.",
+        "- [x] Built stdio entrypoint launched and exposed exactly the seven V1 draft-workflow tools.",
         "- [x] `validate_newsletter_content` completed against the rich Markdown fixture.",
         "- [x] `preview_draft` completed without calling Substack or write tools.",
         "",
@@ -2204,13 +2204,13 @@ describe("scanEvidenceArtifactText gate structure", () => {
       stdioEvidenceWithDetailOverride("Tool-list result", "tools were visible"),
       (path) => {
         expect(scanEvidenceArtifactText(path, ".data/v1/gate-15.md", 15)).toBe(
-          "Gate 15 Tool-list result field must confirm Claude Code or Cursor listed exactly the seven V1 draft-only tools: .data/v1/gate-15.md.",
+          "Gate 15 Tool-list result field must confirm Claude Code or Cursor listed exactly the seven V1 draft-workflow tools: .data/v1/gate-15.md.",
         );
       },
     );
   });
 
-  it("rejects stdio client evidence without V1 draft-only tool-list proof", () => {
+  it("rejects stdio client evidence without V1 draft-workflow tool-list proof", () => {
     withTextArtifact(
       stdioEvidenceWithDetailOverride(
         "Tool-list result",
@@ -2218,7 +2218,7 @@ describe("scanEvidenceArtifactText gate structure", () => {
       ),
       (path) => {
         expect(scanEvidenceArtifactText(path, ".data/v1/gate-15.md", 15)).toBe(
-          "Gate 15 Tool-list result field must confirm Claude Code or Cursor listed exactly the seven V1 draft-only tools: .data/v1/gate-15.md.",
+          "Gate 15 Tool-list result field must confirm Claude Code or Cursor listed exactly the seven V1 draft-workflow tools: .data/v1/gate-15.md.",
         );
       },
     );
@@ -2228,11 +2228,11 @@ describe("scanEvidenceArtifactText gate structure", () => {
     withTextArtifact(
       stdioEvidenceWithDetailOverride(
         "Tool-list result",
-        "exactly seven V1 draft-only tools listed through Claude Code, but six tools were listed in the client",
+        "exactly seven V1 draft-workflow tools listed through Claude Code, but six tools were listed in the client",
       ),
       (path) => {
         expect(scanEvidenceArtifactText(path, ".data/v1/gate-15.md", 15)).toBe(
-          "Gate 15 Tool-list result field must confirm Claude Code or Cursor listed exactly the seven V1 draft-only tools: .data/v1/gate-15.md.",
+          "Gate 15 Tool-list result field must confirm Claude Code or Cursor listed exactly the seven V1 draft-workflow tools: .data/v1/gate-15.md.",
         );
       },
     );
@@ -2292,7 +2292,7 @@ describe("scanEvidenceArtifactText gate structure", () => {
         "",
         "## Required Evidence Checklist",
         "",
-        "- [x] Built stdio entrypoint launched and exposed exactly the seven V1 draft-only tools.",
+        "- [x] Built stdio entrypoint launched and exposed exactly the seven V1 draft-workflow tools.",
         "- [x] `validate_newsletter_content` completed against the rich Markdown fixture.",
         "- [x] `preview_draft` completed without calling Substack or write tools.",
         "",
@@ -2495,13 +2495,13 @@ describe("scanEvidenceArtifactText gate structure", () => {
       ),
       (path) => {
         expect(scanEvidenceArtifactText(path, ".data/v1/remote-oauth.md")).toBe(
-          "Remote OAuth Tool-list result field must confirm exactly seven V1 draft-only tools were listed: .data/v1/remote-oauth.md.",
+          "Remote OAuth Tool-list result field must confirm exactly seven V1 draft-workflow tools were listed: .data/v1/remote-oauth.md.",
         );
       },
     );
   });
 
-  it("rejects remote OAuth launch evidence without V1 draft-only tool-list review", () => {
+  it("rejects remote OAuth launch evidence without V1 draft-workflow tool-list review", () => {
     withTextArtifact(
       remoteOAuthEvidenceWithLaunchReviewOverride(
         "Tool-list result",
@@ -2509,7 +2509,7 @@ describe("scanEvidenceArtifactText gate structure", () => {
       ),
       (path) => {
         expect(scanEvidenceArtifactText(path, ".data/v1/remote-oauth.md")).toBe(
-          "Remote OAuth Tool-list result field must confirm exactly seven V1 draft-only tools were listed: .data/v1/remote-oauth.md.",
+          "Remote OAuth Tool-list result field must confirm exactly seven V1 draft-workflow tools were listed: .data/v1/remote-oauth.md.",
         );
       },
     );
@@ -2519,11 +2519,11 @@ describe("scanEvidenceArtifactText gate structure", () => {
     withTextArtifact(
       remoteOAuthEvidenceWithLaunchReviewOverride(
         "Tool-list result",
-        "seven V1 draft-only tools listed, but more than seven tools were shown",
+        "seven V1 draft-workflow tools listed, but more than seven tools were shown",
       ),
       (path) => {
         expect(scanEvidenceArtifactText(path, ".data/v1/remote-oauth.md")).toBe(
-          "Remote OAuth Tool-list result field must confirm exactly seven V1 draft-only tools were listed: .data/v1/remote-oauth.md.",
+          "Remote OAuth Tool-list result field must confirm exactly seven V1 draft-workflow tools were listed: .data/v1/remote-oauth.md.",
         );
       },
     );
@@ -2740,7 +2740,7 @@ function completedRemoteOAuthLaunchReviewLines(): readonly string[] {
     "- Connector registration result: ChatGPT connector linked and listed tools",
     "- Protected-resource metadata result: protected-resource metadata URL, CORS, and WWW-Authenticate challenge reviewed",
     "- Token validation result: issuer, audience, expiry, and scopes verified",
-    "- Tool-list result: seven V1 draft-only tools listed",
+    "- Tool-list result: seven V1 draft-workflow tools listed",
     "- Validation call result: validate_newsletter_content returned ok",
     "- Preview call result: preview_draft returned a confirmation token",
     "- Error-path result: missing, expired, and wrong-audience tokens were rejected with 401",
@@ -2824,7 +2824,7 @@ function chatGptNgrokEvidenceWithDetailOverride(
     "## Required Evidence Checklist",
     "",
     "- [x] Remote endpoint responded on `/healthz`.",
-    "- [x] Remote noauth MCP endpoint listed exactly the seven V1 draft-only tools.",
+    "- [x] Remote noauth MCP endpoint listed exactly the seven V1 draft-workflow tools.",
     "- [x] `validate_newsletter_content` completed against the rich Markdown fixture.",
     "- [x] `preview_draft` completed without calling Substack or write tools.",
     "",
@@ -2901,7 +2901,7 @@ function stdioEvidenceWithDetailOverride(field: string, value: string): string {
     "",
     "## Required Evidence Checklist",
     "",
-    "- [x] Built stdio entrypoint launched and exposed exactly the seven V1 draft-only tools.",
+    "- [x] Built stdio entrypoint launched and exposed exactly the seven V1 draft-workflow tools.",
     "- [x] `validate_newsletter_content` completed against the rich Markdown fixture.",
     "- [x] `preview_draft` completed without calling Substack or write tools.",
     "",
@@ -3052,7 +3052,7 @@ function completedGateDetailValue(gateId: number, field: string): string {
   }
 
   if (gateId === 11 && field === "Tool-list result") {
-    return "exactly seven V1 draft-only tools listed through the ChatGPT connector";
+    return "exactly seven V1 draft-workflow tools listed through the ChatGPT connector";
   }
 
   if (gateId === 11 && field === "Manual flow result") {
@@ -3152,7 +3152,7 @@ function completedGateDetailValue(gateId: number, field: string): string {
   }
 
   if (gateId === 14 && field === "Tool-list result") {
-    return "exactly seven V1 draft-only tools listed through the header-capable client";
+    return "exactly seven V1 draft-workflow tools listed through the header-capable client";
   }
 
   if (gateId === 14 && field === "Validation call result") {
@@ -3180,7 +3180,7 @@ function completedGateDetailValue(gateId: number, field: string): string {
   }
 
   if (gateId === 15 && field === "Tool-list result") {
-    return "exactly seven V1 draft-only tools listed through Claude Code";
+    return "exactly seven V1 draft-workflow tools listed through Claude Code";
   }
 
   if (gateId === 15 && field === "Validation call result") {

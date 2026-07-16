@@ -18,7 +18,7 @@ body:
           required: true
         - label: This is not a security vulnerability requiring private disclosure.
           required: true
-        - label: The report concerns draft-only behavior and does not request publishing, scheduling, deletion, email delivery, or public Notes.
+        - label: The report concerns a draft workflow and does not request publishing, scheduling, deletion, email delivery, or public Notes.
           required: true
 
   - type: textarea

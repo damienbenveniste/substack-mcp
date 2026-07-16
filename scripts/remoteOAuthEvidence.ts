@@ -133,7 +133,7 @@ export function renderRemoteOAuthEvidenceArtifact(
     "- Connector registration result: <replace with ChatGPT connector registration or linking summary>",
     "- Protected-resource metadata result: <replace with protected-resource metadata, CORS, and challenge review summary>",
     "- Token validation result: <replace with issuer, audience/resource, expiry, and scope checks summary>",
-    "- Tool-list result: <replace with exact seven V1 draft-only tool names>",
+    "- Tool-list result: <replace with exact seven V1 draft-workflow tool names>",
     "- Validation call result: <replace with validate_newsletter_content success summary>",
     "- Preview call result: <replace with preview_draft success summary>",
     "- Error-path result: <replace with missing, expired, wrong-audience, or invalid token rejection summary>",

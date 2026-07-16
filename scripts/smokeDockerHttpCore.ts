@@ -156,7 +156,7 @@ export function dockerHttpUsage(): string {
     "",
     "Builds the Docker image, starts the HTTP MCP server in a container, waits",
     "for /healthz, lists tools over Streamable HTTP, and verifies the exact V1",
-    "draft-only tool surface, then calls validate_newsletter_content and",
+    "draft-workflow tool surface, then calls validate_newsletter_content and",
     "preview_draft with the rich Markdown fixture. It uses safe container env",
     "defaults, does not read .env files, does not call Substack, and does not",
     "run write tools.",

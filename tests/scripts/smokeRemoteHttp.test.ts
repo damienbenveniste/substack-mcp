@@ -266,7 +266,7 @@ describe("remote static-bearer rejection helper", () => {
 });
 
 describe("assertExpectedTools", () => {
-  it("accepts the V1 draft-only tool surface in any order", () => {
+  it("accepts the V1 draft-workflow tool surface in any order", () => {
     expect(() =>
       assertExpectedTools([...EXPECTED_TOOL_NAMES].reverse()),
     ).not.toThrow();
@@ -374,7 +374,7 @@ describe("renderRemoteStaticBearerEvidenceArtifact", () => {
       "- Header configuration method: <replace with how Authorization header was configured without the token value>",
     );
     expect(rendered).toContain(
-      "- Tool-list result: <replace with exact seven V1 draft-only tools listed through the client>",
+      "- Tool-list result: <replace with exact seven V1 draft-workflow tools listed through the client>",
     );
     expect(rendered).toContain(
       "- Validation call result: <replace with validate_newsletter_content success through the client>",

@@ -1450,7 +1450,7 @@ function liveDraftCleanupDecisionProblem(
     value,
   );
   const hasNoPublish =
-    /\b(?:not published|never published|no publish|without publishing|unpublished|private|draft-only)\b/iu.test(
+    /\b(?:not published|never published|no publish|without publishing|unpublished|private)\b/iu.test(
       value,
     );
 
@@ -1469,9 +1469,9 @@ function gateDraftStatusProblem(
   }
 
   return !contradictoryDraftStatusPattern(value) &&
-    draftOnlyStatusPattern().test(value)
+    unpublishedStatusPattern().test(value)
     ? undefined
-    : `Gate ${gateId} ${field} field must confirm the Substack item stayed draft-only or unpublished; published/public status evidence does not satisfy gate ${gateId}: ${artifact}.`;
+    : `Gate ${gateId} ${field} field must confirm the Substack item remained unpublished; published/public status evidence does not satisfy gate ${gateId}: ${artifact}.`;
 }
 
 function contradictoryDraftStatusPattern(value: string): boolean {
@@ -1495,8 +1495,8 @@ function contradictoryDraftStatusPattern(value: string): boolean {
   );
 }
 
-function draftOnlyStatusPattern(): RegExp {
-  return /\b(?:unpublished|draft[- ]only|stayed (?:a )?draft|remained (?:a )?draft|kept (?:as )?(?:a )?draft|left (?:as )?(?:a )?draft|status\s*[:=]\s*["']?(?:draft|unpublished)|is[_ -]?draft\s*[:=]\s*true|draft\s*[:=]\s*true|is[_ -]?published\s*[:=]\s*false|published\s*[:=]\s*false|not published|not public|not live|(?:did not|never|not)\s+(?:go\s+|become\s+|be\s+)?(?:live|public|published))\b/iu;
+function unpublishedStatusPattern(): RegExp {
+  return /\b(?:unpublished|stayed (?:a )?draft|remained (?:a )?draft|kept (?:as )?(?:a )?draft|left (?:as )?(?:a )?draft|status\s*[:=]\s*["']?(?:draft|unpublished)|is[_ -]?draft\s*[:=]\s*true|draft\s*[:=]\s*true|is[_ -]?published\s*[:=]\s*false|published\s*[:=]\s*false|not published|not public|not live|(?:did not|never|not)\s+(?:go\s+|become\s+|be\s+)?(?:live|public|published))\b/iu;
 }
 
 interface Gate7RichRenderingReviews {
@@ -1982,7 +1982,7 @@ function gate11ToolListResultProblem(
 
   return exactSevenToolListReviewPattern(value) && hasChatGptOrConnector
     ? undefined
-    : `Gate 11 Tool-list result field must confirm the ChatGPT connector listed exactly the seven V1 draft-only tools: ${artifact}.`;
+    : `Gate 11 Tool-list result field must confirm the ChatGPT connector listed exactly the seven V1 draft-workflow tools: ${artifact}.`;
 }
 
 function gate11ManualFlowResultProblem(
@@ -2635,11 +2635,11 @@ function gate14ToolListResultProblem(
 
   return exactSevenToolListReviewPattern(value)
     ? undefined
-    : `Gate 14 Tool-list result field must confirm the header-capable client listed exactly the seven V1 draft-only tools: ${artifact}.`;
+    : `Gate 14 Tool-list result field must confirm the header-capable client listed exactly the seven V1 draft-workflow tools: ${artifact}.`;
 }
 
 function exactSevenToolListPattern(): RegExp {
-  return /^(?=.*\b(?:exactly\s+)?(?:seven|7)\b)(?=.*\bV1\b)(?=.*\bdraft[- ]only\b)(?=.*\btools?\b)(?=.*\b(?:listed|returned|shown|available|visible)\b).+$/isu;
+  return /^(?=.*\b(?:exactly\s+)?(?:seven|7)\b)(?=.*\bV1\b)(?=.*\bdraft[- ]workflow\b)(?=.*\btools?\b)(?=.*\b(?:listed|returned|shown|available|visible)\b).+$/isu;
 }
 
 function exactSevenToolListReviewPattern(value: string): boolean {
@@ -2650,7 +2650,7 @@ function exactSevenToolListReviewPattern(value: string): boolean {
 }
 
 function contradictoryToolCountPattern(): RegExp {
-  return /\b(?:not|never)\s+(?:exactly\s+)?(?:seven|7)\b.{0,80}\btools?\b|\btools?\b.{0,80}\b(?:not|never)\b.{0,40}\b(?:exactly\s+)?(?:seven|7)\b|\b(?:more|fewer|less)\s+than\s+(?:seven|7)\b.{0,80}\btools?\b|\b(?:only\s+)?(?:zero|one|two|three|four|five|six|eight|nine|ten|eleven|twelve|0|1|2|3|4|5|6|8|9|1\d|[2-9]\d)\s+(?:V1\s+|draft-only\s+)?tools?\b|\btool count:\s*(?:0|1|2|3|4|5|6|8|9|1\d|[2-9]\d)\b/iu;
+  return /\b(?:not|never)\s+(?:exactly\s+)?(?:seven|7)\b.{0,80}\btools?\b|\btools?\b.{0,80}\b(?:not|never)\b.{0,40}\b(?:exactly\s+)?(?:seven|7)\b|\b(?:more|fewer|less)\s+than\s+(?:seven|7)\b.{0,80}\btools?\b|\b(?:only\s+)?(?:zero|one|two|three|four|five|six|eight|nine|ten|eleven|twelve|0|1|2|3|4|5|6|8|9|1\d|[2-9]\d)\s+(?:V1\s+|draft-workflow\s+)?tools?\b|\btool count:\s*(?:0|1|2|3|4|5|6|8|9|1\d|[2-9]\d)\b/iu;
 }
 
 function gate14ValidationCallResultProblem(
@@ -2802,7 +2802,7 @@ function gate15ToolListResultProblem(
 
   return exactSevenToolListReviewPattern(value)
     ? undefined
-    : `Gate 15 Tool-list result field must confirm Claude Code or Cursor listed exactly the seven V1 draft-only tools: ${artifact}.`;
+    : `Gate 15 Tool-list result field must confirm Claude Code or Cursor listed exactly the seven V1 draft-workflow tools: ${artifact}.`;
 }
 
 function gate15ValidationCallResultProblem(
@@ -3471,7 +3471,7 @@ function requiredChatGptNgrokRemoteProofs(): readonly string[] {
     "- Health status: 200",
     "- Tool count: 7",
     "- [x] Remote endpoint responded on `/healthz`.",
-    "- [x] Remote noauth MCP endpoint listed exactly the seven V1 draft-only tools.",
+    "- [x] Remote noauth MCP endpoint listed exactly the seven V1 draft-workflow tools.",
     "- [x] `validate_newsletter_content` completed against the rich Markdown fixture.",
     "- [x] `preview_draft` completed without calling Substack or write tools.",
   ];
@@ -3500,7 +3500,7 @@ function requiredLocalStdioProofs(): readonly string[] {
   return [
     "- Transport: stdio",
     "- Tool count: 7",
-    "- [x] Built stdio entrypoint launched and exposed exactly the seven V1 draft-only tools.",
+    "- [x] Built stdio entrypoint launched and exposed exactly the seven V1 draft-workflow tools.",
     "- [x] `validate_newsletter_content` completed against the rich Markdown fixture.",
     "- [x] `preview_draft` completed without calling Substack or write tools.",
   ];
@@ -3635,11 +3635,11 @@ export function requiredRemoteOAuthLaunchChecklistLabels(): readonly string[] {
     "OAuth protected-resource metadata allowed browser CORS reads and preflight.",
     "Metadata advertised the required V1 OAuth scopes.",
     "Remote OAuth MCP endpoint accepted a real OAuth bearer access token.",
-    "Endpoint listed exactly the seven V1 draft-only tools.",
+    "Endpoint listed exactly the seven V1 draft-workflow tools.",
     "`validate_newsletter_content` completed against the rich Markdown fixture.",
     "`preview_draft` completed without calling Substack or write tools.",
     "A real browser authorization-code login was completed against the intended authorization server.",
-    "ChatGPT connector completed the OAuth login flow and listed the same seven V1 draft-only tools.",
+    "ChatGPT connector completed the OAuth login flow and listed the same seven V1 draft-workflow tools.",
     "Token expiry, audience, issuer, and scope behavior were verified without recording token values.",
     "Evidence was reviewed to confirm no OAuth token, authorization code, Substack credential, or draft content is included.",
   ];
@@ -3732,7 +3732,7 @@ function remoteOAuthLaunchReviewProblem(
 
   const toolList = review.get("Tool-list result") ?? "";
   if (!exactSevenToolListReviewPattern(toolList)) {
-    return `Remote OAuth Tool-list result field must confirm exactly seven V1 draft-only tools were listed: ${artifact}.`;
+    return `Remote OAuth Tool-list result field must confirm exactly seven V1 draft-workflow tools were listed: ${artifact}.`;
   }
 
   const validationCall = review.get("Validation call result") ?? "";

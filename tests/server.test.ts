@@ -45,7 +45,7 @@ const expectedAnnotations = {
 } as const;
 
 const draftWriteSafetyStatement =
-  "This tool creates or modifies a Substack draft only. It never publishes, schedules, deletes, emails, or creates public Notes. The user must review and publish manually inside Substack.";
+  "This tool creates or modifies an unpublished Substack draft. It never publishes, schedules, deletes, emails, or creates public Notes. The user must review and publish manually inside Substack.";
 const validPngDataUri =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAADCAYAAAC09K7GAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAEklEQVQImWP4oBGwHxkzEBQAAJVxGdV+F71hAAAAAElFTkSuQmCC";
 const forbiddenToolNamePattern =
@@ -102,7 +102,7 @@ describe("createMcpServer", () => {
         draftWriteSafetyStatement,
       );
       expect(toolsByName.get("upload_image")?.description).toContain(
-        "This tool uploads image assets for draft use only.",
+        "This tool uploads image assets for use in unpublished drafts.",
       );
       expect(toolsByName.get("upload_image")?.description).toContain(
         "The user must review and publish manually inside Substack.",

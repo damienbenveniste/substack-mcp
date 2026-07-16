@@ -767,7 +767,7 @@ function completedGateDetailValue(gateId: number, field: string): string {
   }
 
   if (gateId === 11 && field === "Tool-list result") {
-    return "exactly seven V1 draft-only tools listed through the ChatGPT connector";
+    return "exactly seven V1 draft-workflow tools listed through the ChatGPT connector";
   }
 
   if (gateId === 11 && field === "Manual flow result") {
@@ -867,7 +867,7 @@ function completedGateDetailValue(gateId: number, field: string): string {
   }
 
   if (gateId === 14 && field === "Tool-list result") {
-    return "exactly seven V1 draft-only tools listed through the header-capable client";
+    return "exactly seven V1 draft-workflow tools listed through the header-capable client";
   }
 
   if (gateId === 14 && field === "Validation call result") {
@@ -895,7 +895,7 @@ function completedGateDetailValue(gateId: number, field: string): string {
   }
 
   if (gateId === 15 && field === "Tool-list result") {
-    return "exactly seven V1 draft-only tools listed through Claude Code";
+    return "exactly seven V1 draft-workflow tools listed through Claude Code";
   }
 
   if (gateId === 15 && field === "Validation call result") {

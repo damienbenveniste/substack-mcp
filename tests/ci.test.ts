@@ -82,7 +82,7 @@ describe("repository hygiene examples", () => {
     for (const text of [
       "This project uses Substack's unofficial/internal API.",
       "## Safety Boundary",
-      "V1 must not publish, schedule, delete, email, or create public Substack Notes.",
+      "It does not publish, schedule, delete, email, or create public Substack Notes.",
       "## Supported Formatting",
       "## Known Limitations",
       "## Quickstart",
@@ -108,7 +108,7 @@ describe("repository hygiene examples", () => {
 
     for (const text of [
       "uses Substack's unofficial/internal API",
-      "The server is draft-only.",
+      "The server manages unpublished drafts.",
       "must not publish, schedule, delete, email, or create public Substack Notes",
       "Never commit private `.env` files, Substack session cookies, preview token secrets, bearer tokens, draft bodies from private posts, or Cloud Run secret values.",
       "AUTH_MODE=noauth",

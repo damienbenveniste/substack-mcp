@@ -10,7 +10,7 @@ introduced, this section will identify any additional supported release lines.
 
 ## Product Boundary
 
-The server is draft-only. It must not publish, schedule, delete, email, or create public Substack Notes. Write tools create or update unpublished drafts only, and the user must review and publish manually inside Substack.
+The server manages unpublished drafts. It must not publish, schedule, delete, email, or create public Substack Notes. Write tools create or update unpublished drafts, and the user must review and publish manually inside Substack.
 
 ## Secrets
 

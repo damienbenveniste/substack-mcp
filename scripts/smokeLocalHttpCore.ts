@@ -204,7 +204,7 @@ export function localHttpUsage(): string {
     "Usage: npm run smoke:http-local -- [options]",
     "",
     "Launches the built HTTP MCP server, waits for /healthz, lists tools over",
-    "Streamable HTTP, verifies the V1 draft-only tool surface, and calls",
+    "Streamable HTTP, verifies the V1 draft-workflow tool surface, and calls",
     "validate_newsletter_content and preview_draft with the rich Markdown",
     "fixture. It does not call Substack and does not run write tools.",
     "",
