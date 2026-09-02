@@ -81,7 +81,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "@xmldom/xmldom": "^0.9.10",
+    "@xmldom/xmldom": "^0.9.12",
     "dotenv": "^16.6.1",
     "jose": "^6.2.3",
     "pino": "^9.14.0",
